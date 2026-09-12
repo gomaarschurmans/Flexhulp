@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { login, type AuthState } from "@/app/auth/actions";
 
@@ -11,7 +12,14 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] flex-col justify-center px-6">
-      <h1 className="mb-1 text-3xl text-navy">Flexhulp</h1>
+      <Image
+        src="/flexhulp-logo.png"
+        alt="Flexhulp"
+        width={190}
+        height={40}
+        priority
+        className="mb-1 h-10 w-auto"
+      />
       <p className="mb-8 text-sm text-ink-soft">
         klussen &amp; opdrachten voor studenten
       </p>

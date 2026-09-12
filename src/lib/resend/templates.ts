@@ -3,7 +3,7 @@ import type { Task } from "@/lib/types/domain";
 
 const wrapper = (title: string, bodyHtml: string) => `
 <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F5F3EE; color: #16181D;">
-  <h1 style="font-size: 22px; color: #1E2A44; margin: 0 0 16px;">Flexhulp</h1>
+  <img src="https://www.flexhulp.be/flexhulp-logo.png" alt="Flexhulp" height="32" style="height: 32px; width: auto; margin: 0 0 20px; display: block;" />
   <h2 style="font-size: 18px; margin: 0 0 12px;">${title}</h2>
   <div style="font-size: 15px; line-height: 1.6;">${bodyHtml}</div>
   <p style="font-size: 12px; color: #5B5F66; margin-top: 32px;">Klussen &amp; opdrachten voor studenten.</p>

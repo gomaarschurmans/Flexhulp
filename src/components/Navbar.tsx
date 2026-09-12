@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Role } from "@/lib/types/domain";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -17,9 +18,16 @@ export function Navbar({ name, role }: { name: string; role: Role }) {
   return (
     <header className="border-b border-line">
       <div className="mx-auto flex max-w-[1080px] flex-wrap items-center justify-between gap-4 px-6 py-6">
-        <div className="flex items-baseline gap-3">
-          <h1 className="m-0 text-3xl text-navy">Flexhulp</h1>
-          <span className="text-sm text-ink-soft">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/flexhulp-logo.png"
+            alt="Flexhulp"
+            width={190}
+            height={40}
+            priority
+            className="h-9 w-auto"
+          />
+          <span className="hidden text-sm text-ink-soft sm:inline">
             klussen &amp; opdrachten voor studenten
           </span>
         </div>
