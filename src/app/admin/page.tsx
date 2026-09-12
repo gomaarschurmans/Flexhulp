@@ -2,20 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { updateRate, addAvailability, removeAvailability } from "@/app/admin/actions";
 import { AdminTasksPanel } from "@/app/admin/AdminTasksPanel";
 import { DAYS } from "@/lib/constants";
+import { sortAvailability } from "@/lib/utils";
 
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  const [{ data: settings }, { data: availability }, { data: tasks }] =
+  const [{ data: settings }, { data: availabilityRaw }, { data: tasks }] =
     await Promise.all([
       supabase.from("platform_settings").select("hourly_rate").eq("id", 1).single(),
-      supabase
-        .from("availability")
-        .select("*")
-        .order("day")
-        .order("start_time"),
+      supabase.from("availability").select("*"),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
     ]);
+  const availability = sortAvailability(availabilityRaw ?? []);
 
   return (
     <div>

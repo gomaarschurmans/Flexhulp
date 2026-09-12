@@ -1,5 +1,17 @@
+import { DAYS } from "@/lib/constants";
+import type { AvailabilitySlot } from "@/lib/types/domain";
+
 export function formatEuro(amount: number): string {
   return "€ " + amount.toFixed(2).replace(".", ",");
+}
+
+export function sortAvailability(rows: AvailabilitySlot[]): AvailabilitySlot[] {
+  return [...rows].sort((a, b) => {
+    const dayDiff =
+      DAYS.indexOf(a.day as (typeof DAYS)[number]) - DAYS.indexOf(b.day as (typeof DAYS)[number]);
+    if (dayDiff !== 0) return dayDiff;
+    return a.start_time.localeCompare(b.start_time);
+  });
 }
 
 export function computePayout(hours: number, rate: number): number {

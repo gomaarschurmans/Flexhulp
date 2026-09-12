@@ -4,10 +4,17 @@ import { useActionState, useState } from "react";
 import { createTask, type CreateTaskState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
 import { formatEuro } from "@/lib/utils";
+import type { AvailabilitySlot } from "@/lib/types/domain";
 
 const initialState: CreateTaskState = { error: null };
 
-export function CreateTaskForm({ rate }: { rate: number }) {
+export function CreateTaskForm({
+  rate,
+  availability,
+}: {
+  rate: number;
+  availability: AvailabilitySlot[];
+}) {
   const [state, formAction, pending] = useActionState(createTask, initialState);
   const [hours, setHours] = useState("");
 
@@ -24,6 +31,24 @@ export function CreateTaskForm({ rate }: { rate: number }) {
         <span>Platformtarief</span>
         <strong className="text-lg">{formatEuro(rate)} /uur</strong>
       </div>
+
+      {availability.length > 0 && (
+        <div className="mb-5">
+          <label className="mb-1.5 block text-sm font-medium text-ink-soft">
+            Beschikbaar op
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {availability.map((a) => (
+              <span
+                key={a.id}
+                className="rounded-full bg-teal-soft px-3 py-1.5 text-sm font-semibold text-teal"
+              >
+                {a.day} {a.start_time.slice(0, 5)}–{a.end_time.slice(0, 5)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form action={formAction}>
         <div className="field mb-4">
