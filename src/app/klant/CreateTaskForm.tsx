@@ -1,28 +1,37 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { createTask, type CreateTaskState } from "@/app/klant/actions";
+import { useActionState, useMemo, useState } from "react";
+import { bookSlot, type BookSlotState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
-import { formatEuro } from "@/lib/utils";
+import { formatEuro, formatSlotRange, slotHours } from "@/lib/utils";
+import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
 import type { AvailabilitySlot } from "@/lib/types/domain";
 
-const initialState: CreateTaskState = { error: null };
+const initialState: BookSlotState = { error: null };
 
 export function CreateTaskForm({
   rate,
-  availability,
+  initialSlots,
 }: {
   rate: number;
-  availability: AvailabilitySlot[];
+  initialSlots: AvailabilitySlot[];
 }) {
-  const [state, formAction, pending] = useActionState(createTask, initialState);
-  const [hours, setHours] = useState("");
+  const [state, formAction, pending] = useActionState(bookSlot, initialState);
+  const slots = useRealtimeAvailability(initialSlots).filter(
+    (s) => s.status === "open"
+  );
+  const [slotId, setSlotId] = useState(slots[0]?.id ?? "");
 
-  const hoursNum = parseFloat(hours);
-  const preview =
-    hoursNum > 0
-      ? `Geschatte vergoeding: ${formatEuro(hoursNum * rate)} (${hoursNum} u × ${formatEuro(rate)})`
-      : "";
+  const selectedSlot = useMemo(
+    () => slots.find((s) => s.id === slotId),
+    [slots, slotId]
+  );
+  const preview = selectedSlot
+    ? (() => {
+        const hours = slotHours(selectedSlot.start_time, selectedSlot.end_time);
+        return `Geschatte vergoeding: ${formatEuro(hours * rate)} (${hours} u × ${formatEuro(rate)})`;
+      })()
+    : "";
 
   return (
     <div className="card">
@@ -32,79 +41,74 @@ export function CreateTaskForm({
         <strong className="text-lg">{formatEuro(rate)} /uur</strong>
       </div>
 
-      {availability.length > 0 && (
-        <div className="mb-5">
-          <label className="mb-1.5 block text-sm font-medium text-ink-soft">
-            Beschikbaar op
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {availability.map((a) => (
-              <span
-                key={a.id}
-                className="rounded-full bg-teal-soft px-3 py-1.5 text-sm font-semibold text-teal"
-              >
-                {a.day} {a.start_time.slice(0, 5)}–{a.end_time.slice(0, 5)}
-              </span>
-            ))}
+      {slots.length === 0 ? (
+        <div className="rounded border border-dashed border-line p-8 text-center text-sm text-ink-soft">
+          Er zijn op dit moment geen beschikbare tijdsloten. Kom later nog eens
+          terug.
+        </div>
+      ) : (
+        <form action={formAction}>
+          <div className="field mb-4">
+            <label htmlFor="slot_id">Kies een tijdslot</label>
+            <select
+              id="slot_id"
+              name="slot_id"
+              value={slotId}
+              onChange={(e) => setSlotId(e.target.value)}
+            >
+              {slots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {formatSlotRange(s.slot_date, s.start_time, s.end_time)}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-      )}
-
-      <form action={formAction}>
-        <div className="field mb-4">
-          <label htmlFor="title">Titel</label>
-          <input id="title" name="title" type="text" placeholder="bv. Helpen verhuizen" required />
-        </div>
-        <div className="field mb-4">
-          <label htmlFor="category">Categorie</label>
-          <select id="category" name="category" defaultValue={CATEGORIES[0]}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field mb-4">
-          <label htmlFor="description">Beschrijving</label>
-          <textarea id="description" name="description" placeholder="Wat moet er gebeuren?" />
-        </div>
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <div className="field mb-0">
-            <label htmlFor="date">Datum</label>
-            <input id="date" name="date" type="date" required />
+          <div className="field mb-4">
+            <label htmlFor="category">Categorie</label>
+            <select id="category" name="category" defaultValue={CATEGORIES[0]}>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="field mb-0">
-            <label htmlFor="time">Tijdstip</label>
-            <input id="time" name="time" type="time" required />
-          </div>
-        </div>
-        <div className="mb-1 grid grid-cols-2 gap-3">
-          <div className="field mb-0">
-            <label htmlFor="location">Locatie</label>
-            <input id="location" name="location" type="text" placeholder="bv. Sint-Truiden" required />
-          </div>
-          <div className="field mb-0">
-            <label htmlFor="hours">Geschatte duur (uren)</label>
-            <input
-              id="hours"
-              name="hours"
-              type="number"
-              min="0.5"
-              step="0.5"
-              placeholder="bv. 3"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
+          <div className="field mb-4">
+            <label htmlFor="description">Beschrijving</label>
+            <textarea
+              id="description"
+              name="description"
+              placeholder="Wat moet er gebeuren?"
               required
             />
           </div>
-        </div>
-        {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}
-        {state.error && <p className="mb-3 text-sm text-danger">{state.error}</p>}
-        <button type="submit" disabled={pending} className="btn btn-navy w-full">
-          {pending ? "Bezig..." : "Taak plaatsen"}
-        </button>
-      </form>
+          <div className="field mb-4">
+            <label htmlFor="location">Locatie</label>
+            <input
+              id="location"
+              name="location"
+              type="text"
+              placeholder="bv. Sint-Truiden"
+              required
+            />
+          </div>
+          <div className="field mb-1">
+            <label htmlFor="extra_info">Extra info / benodigdheden</label>
+            <textarea
+              id="extra_info"
+              name="extra_info"
+              placeholder="Specifieke vragen, benodigdheden of voorzieningen die gebruikt kunnen worden."
+            />
+          </div>
+          {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}
+          {state.error && (
+            <p className="mb-3 text-sm text-danger">{state.error}</p>
+          )}
+          <button type="submit" disabled={pending} className="btn btn-navy w-full">
+            {pending ? "Bezig..." : "Tijdslot boeken"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

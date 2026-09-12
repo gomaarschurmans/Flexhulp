@@ -9,21 +9,21 @@ export default async function KlantPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: settings }, { data: tasks }, { data: availability }] = await Promise.all([
+  const [{ data: settings }, { data: tasks }, { data: slots }] = await Promise.all([
     supabase.from("platform_settings").select("hourly_rate").eq("id", 1).single(),
     supabase
       .from("tasks")
       .select("*")
       .eq("client_id", user!.id)
       .order("created_at", { ascending: false }),
-    supabase.from("availability").select("*"),
+    supabase.from("availability").select("*").eq("status", "open"),
   ]);
 
   return (
     <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[380px_1fr]">
       <CreateTaskForm
         rate={settings?.hourly_rate ?? 0}
-        availability={sortAvailability(availability ?? [])}
+        initialSlots={sortAvailability(slots ?? [])}
       />
       <KlantTaskList initialTasks={tasks ?? []} />
     </div>

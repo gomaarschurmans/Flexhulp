@@ -35,6 +35,13 @@ export function TaskCard({
         </p>
       )}
 
+      {task.extra_info && (
+        <p className="mb-3 text-sm leading-relaxed text-ink-soft">
+          <span className="font-medium text-ink">Extra info: </span>
+          {task.extra_info}
+        </p>
+      )}
+
       <div className="mb-3 flex flex-wrap gap-3.5 text-sm text-ink-soft">
         <span>
           <strong className="text-ink">
