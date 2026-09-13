@@ -27,16 +27,21 @@ export interface Task {
   student_name: string | null;
   student_email: string | null;
   status: TaskStatus;
+  extra_info: string;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
 }
 
+export type AvailabilityStatus = "open" | "booked";
+
 export interface AvailabilitySlot {
   id: string;
-  day: string;
+  slot_date: string;
   start_time: string;
   end_time: string;
+  status: AvailabilityStatus;
+  task_id: string | null;
   created_at: string;
 }
 

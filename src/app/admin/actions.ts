@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { DAYS } from "@/lib/constants";
 
 export async function updateRate(formData: FormData) {
   const rate = parseFloat(String(formData.get("hourly_rate") ?? ""));
@@ -26,15 +25,15 @@ export async function updateRate(formData: FormData) {
 }
 
 export async function addAvailability(formData: FormData) {
-  const day = String(formData.get("day") ?? "");
+  const slotDate = String(formData.get("slot_date") ?? "");
   const start = String(formData.get("start") ?? "");
   const end = String(formData.get("end") ?? "");
-  if (!DAYS.includes(day as (typeof DAYS)[number]) || !start || !end) return;
+  if (!slotDate || !start || !end) return;
   if (start >= end) return;
 
   const supabase = await createClient();
   await supabase.from("availability").insert({
-    day,
+    slot_date: slotDate,
     start_time: start,
     end_time: end,
   });
@@ -44,6 +43,13 @@ export async function addAvailability(formData: FormData) {
 
 export async function removeAvailability(id: string) {
   const supabase = await createClient();
+  const { data: slot } = await supabase
+    .from("availability")
+    .select("status")
+    .eq("id", id)
+    .single();
+  if (slot?.status === "booked") return;
+
   await supabase.from("availability").delete().eq("id", id);
   revalidatePath("/admin");
 }

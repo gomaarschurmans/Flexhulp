@@ -10,13 +10,3 @@ export const CATEGORIES = [
   "Gezelschap houden",
   "Kleine verhuis",
 ] as const;
-
-export const DAYS = [
-  "Maandag",
-  "Dinsdag",
-  "Woensdag",
-  "Donderdag",
-  "Vrijdag",
-  "Zaterdag",
-  "Zondag",
-] as const;

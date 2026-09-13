@@ -1,4 +1,3 @@
-import { DAYS } from "@/lib/constants";
 import type { AvailabilitySlot } from "@/lib/types/domain";
 
 export function formatEuro(amount: number): string {
@@ -6,12 +5,11 @@ export function formatEuro(amount: number): string {
 }
 
 export function sortAvailability(rows: AvailabilitySlot[]): AvailabilitySlot[] {
-  return [...rows].sort((a, b) => {
-    const dayDiff =
-      DAYS.indexOf(a.day as (typeof DAYS)[number]) - DAYS.indexOf(b.day as (typeof DAYS)[number]);
-    if (dayDiff !== 0) return dayDiff;
-    return a.start_time.localeCompare(b.start_time);
-  });
+  return [...rows].sort((a, b) =>
+    a.slot_date === b.slot_date
+      ? a.start_time.localeCompare(b.start_time)
+      : a.slot_date.localeCompare(b.slot_date)
+  );
 }
 
 export function computePayout(hours: number, rate: number): number {
@@ -31,6 +29,20 @@ export function formatDateTime(date: string, time: string): string {
   }
   if (time) out += (out ? " · " : "") + time.slice(0, 5);
   return out;
+}
+
+export function formatSlotRange(
+  slotDate: string,
+  startTime: string,
+  endTime: string
+): string {
+  return `${formatDateTime(slotDate, startTime)}–${endTime.slice(0, 5)}`;
+}
+
+export function slotHours(startTime: string, endTime: string): number {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  return (eh * 60 + em - (sh * 60 + sm)) / 60;
 }
 
 export const STATUS_LABELS: Record<string, string> = {
