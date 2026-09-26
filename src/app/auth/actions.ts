@@ -60,6 +60,54 @@ export async function signup(
   redirect("/signup/check-email");
 }
 
+export type ResetRequestState = { error: string | null; sent: boolean };
+
+export async function requestPasswordReset(
+  _prevState: ResetRequestState,
+  formData: FormData
+): Promise<ResetRequestState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Vul je e-mailadres in.", sent: false };
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email);
+
+  // Altijd hetzelfde antwoord, zodat niemand kan nagaan welke adressen een account hebben.
+  return { error: null, sent: true };
+}
+
+export async function updatePassword(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 8) {
+    return { error: "Kies een wachtwoord van minstens 8 tekens." };
+  }
+  if (password !== confirm) {
+    return { error: "De twee wachtwoorden komen niet overeen." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Deze link is verlopen. Vraag een nieuwe aan." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/");
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

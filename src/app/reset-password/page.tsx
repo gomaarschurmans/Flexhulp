@@ -3,12 +3,15 @@
 import { useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { login, type AuthState } from "@/app/auth/actions";
+import { updatePassword, type AuthState } from "@/app/auth/actions";
 
 const initialState: AuthState = { error: null };
 
-export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, initialState);
+export default function ResetPasswordPage() {
+  const [state, formAction, pending] = useActionState(
+    updatePassword,
+    initialState
+  );
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] flex-col justify-center px-6">
@@ -23,15 +26,28 @@ export default function LoginPage() {
       <p className="mb-8 text-sm text-ink-soft">
         klussen &amp; opdrachten voor studenten
       </p>
+
       <form action={formAction} className="card">
-        <h2 className="mb-5 text-xl">Inloggen</h2>
+        <h2 className="mb-5 text-xl">Nieuw wachtwoord instellen</h2>
         <div className="field mb-4">
-          <label htmlFor="email">E-mailadres</label>
-          <input id="email" name="email" type="email" required />
+          <label htmlFor="password">Nieuw wachtwoord</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minLength={8}
+            required
+          />
         </div>
         <div className="field mb-2">
-          <label htmlFor="password">Wachtwoord</label>
-          <input id="password" name="password" type="password" required />
+          <label htmlFor="confirm">Herhaal wachtwoord</label>
+          <input
+            id="confirm"
+            name="confirm"
+            type="password"
+            minLength={8}
+            required
+          />
         </div>
         {state.error && (
           <p className="mb-2 text-sm text-danger">{state.error}</p>
@@ -41,18 +57,14 @@ export default function LoginPage() {
           disabled={pending}
           className="btn btn-navy mt-4 w-full"
         >
-          {pending ? "Bezig..." : "Inloggen"}
+          {pending ? "Bezig..." : "Wachtwoord opslaan"}
         </button>
-        <p className="mt-4 text-center text-sm">
-          <Link href="/forgot-password" className="text-ink-soft underline">
-            Wachtwoord vergeten?
-          </Link>
-        </p>
       </form>
+
       <p className="mt-6 text-center text-sm text-ink-soft">
-        Nog geen account?{" "}
-        <Link href="/signup" className="font-semibold text-navy">
-          Registreer
+        Link verlopen?{" "}
+        <Link href="/forgot-password" className="font-semibold text-navy">
+          Vraag een nieuwe aan
         </Link>
       </p>
     </div>

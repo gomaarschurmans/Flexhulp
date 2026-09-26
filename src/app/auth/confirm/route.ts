@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
       token_hash,
     });
 
+    if (!error && data.user && type === "recovery") {
+      return NextResponse.redirect(`${origin}/reset-password`);
+    }
+
     if (!error && data.user) {
       const { data: profile } = await supabase
         .from("profiles")
