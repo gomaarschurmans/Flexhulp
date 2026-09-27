@@ -14,7 +14,13 @@ const MONTH_NAMES = [
 const WEEKDAY_LABELS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
 
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // Let op: d.toISOString() converteert naar UTC en schuift de datum een
+  // dag terug in tijdzones vóór UTC (zoals België) — daarom hier de lokale
+  // datumcomponenten rechtstreeks opbouwen.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function AdminCalendar({
