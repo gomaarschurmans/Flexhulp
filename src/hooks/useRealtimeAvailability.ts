@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { AvailabilitySlot } from "@/lib/types/domain";
 
@@ -10,6 +10,7 @@ import type { AvailabilitySlot } from "@/lib/types/domain";
  */
 export function useRealtimeAvailability(initialSlots: AvailabilitySlot[]) {
   const [slots, setSlots] = useState<AvailabilitySlot[]>(initialSlots);
+  const id = useId();
 
   useEffect(() => {
     setSlots(initialSlots);
@@ -17,8 +18,10 @@ export function useRealtimeAvailability(initialSlots: AvailabilitySlot[]) {
 
   useEffect(() => {
     const supabase = createClient();
+    // Kanaalnaam moet uniek zijn per hook-instantie — zie useRealtimeTasks
+    // voor waarom (meerdere gelijktijdige gebruiken op /admin).
     const channel = supabase
-      .channel("availability-changes")
+      .channel(`availability-changes-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "availability" },
@@ -42,7 +45,7 @@ export function useRealtimeAvailability(initialSlots: AvailabilitySlot[]) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [id]);
 
   return slots;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Task } from "@/lib/types/domain";
 
@@ -11,6 +11,7 @@ import type { Task } from "@/lib/types/domain";
  */
 export function useRealtimeTasks(initialTasks: Task[]) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const id = useId();
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -18,8 +19,12 @@ export function useRealtimeTasks(initialTasks: Task[]) {
 
   useEffect(() => {
     const supabase = createClient();
+    // Kanaalnaam moet uniek zijn per hook-instantie: sommige pagina's
+    // gebruiken deze hook meermaals tegelijk (bv. admin-kalender +
+    // admin-takentabel), en een gedeelde naam laat Supabase Realtime crashen
+    // ("cannot add postgres_changes callbacks ... after subscribe()").
     const channel = supabase
-      .channel("tasks-changes")
+      .channel(`tasks-changes-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tasks" },
@@ -43,7 +48,7 @@ export function useRealtimeTasks(initialTasks: Task[]) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [id]);
 
   return tasks;
 }
