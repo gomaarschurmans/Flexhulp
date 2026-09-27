@@ -104,3 +104,33 @@ Deze app is klaar om te deployen op [Vercel](https://vercel.com): koppel de
 repo, vul dezelfde omgevingsvariabelen in als hierboven (met
 `NEXT_PUBLIC_SITE_URL` op je echte domein), en zet de confirm-signup redirect
 in Supabase op dat domein.
+
+## Optionele diensten (v3: bedrijfsklare functies)
+
+Deze werken allemaal **zonder** dat je ze instelt (de app degradeert netjes),
+maar zijn aan te raden voor echt gebruik:
+
+- **CAPTCHA / spambescherming** ([Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile),
+  gratis, geen betaalgegevens): maak een widget aan, kopieer de **Site key**
+  naar `NEXT_PUBLIC_TURNSTILE_SITE_KEY` en de **Secret key** naar
+  `TURNSTILE_SECRET_KEY`.
+- **Foutmonitoring** ([Sentry](https://sentry.io), gratis tier): maak een
+  Next.js-project aan, kopieer de **DSN** naar `NEXT_PUBLIC_SENTRY_DSN`.
+- **Sms-meldingen** ([Twilio](https://www.twilio.com), **betalend**: een
+  telefoonnummer + kosten per bericht): zet `TWILIO_ACCOUNT_SID`,
+  `TWILIO_AUTH_TOKEN` en `TWILIO_FROM_NUMBER`.
+- **Account-verwijdering (GDPR)**: vereist `SUPABASE_SERVICE_ROLE_KEY`
+  (Supabase → Project Settings → API → `service_role` key). **Geheim** — nooit
+  delen, nooit als `NEXT_PUBLIC_`-variabele zetten.
+
+## Databasemigraties
+
+Elke schemawijziging staat als apart, met de hand uit te voeren SQL-bestand
+in `supabase/`, in volgorde:
+
+1. `schema.sql` — volledig schema (enkel nodig bij een nieuw project vanaf nul)
+2. `migration_slot_booking.sql`
+3. `migration_v3_business_features.sql`
+
+Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
+bijhorende code-versie deployt.

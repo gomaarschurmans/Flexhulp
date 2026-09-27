@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export type AuthState = { error: string | null };
 
@@ -34,13 +35,25 @@ export async function signup(
 ): Promise<AuthState> {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const role = formData.get("role") === "student" ? "student" : "client";
+  const acceptedTerms = formData.get("accept_terms") === "on";
 
   if (!name || !email || password.length < 8) {
     return {
       error: "Vul je naam, e-mailadres en een wachtwoord van minstens 8 tekens in.",
     };
+  }
+  if (!acceptedTerms) {
+    return {
+      error: "Je moet akkoord gaan met de voorwaarden en privacyverklaring.",
+    };
+  }
+
+  const turnstileOk = await verifyTurnstile(formData.get("cf-turnstile-response"));
+  if (!turnstileOk) {
+    return { error: "Verificatie mislukt. Probeer opnieuw." };
   }
 
   const supabase = await createClient();
@@ -49,7 +62,7 @@ export async function signup(
     email,
     password,
     options: {
-      data: { name, role },
+      data: { name, role, phone: phone || null },
       emailRedirectTo: `${siteUrl}/auth/confirm`,
     },
   });

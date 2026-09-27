@@ -9,12 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sentry/nextjs": "^8.42.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.45.4",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^2.13.3",
     "resend": "^4.0.1",
+    "twilio": "^5.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

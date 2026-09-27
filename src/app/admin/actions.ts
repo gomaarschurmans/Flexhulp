@@ -24,20 +24,44 @@ export async function updateRate(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function updateCancellationPolicy(formData: FormData) {
+  const hours = parseInt(String(formData.get("cancellation_notice_hours") ?? ""), 10);
+  if (isNaN(hours) || hours < 0) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("platform_settings")
+    .update({ cancellation_notice_hours: hours })
+    .eq("id", 1);
+
+  revalidatePath("/admin");
+}
+
 export async function addAvailability(formData: FormData) {
   const slotDate = String(formData.get("slot_date") ?? "");
   const start = String(formData.get("start") ?? "");
   const end = String(formData.get("end") ?? "");
+  const repeatWeeks = Math.max(
+    0,
+    Math.min(52, parseInt(String(formData.get("repeat_weeks") ?? "0"), 10) || 0)
+  );
   if (!slotDate || !start || !end) return;
   if (start >= end) return;
 
   const supabase = await createClient();
-  await supabase.from("availability").insert({
-    slot_date: slotDate,
-    start_time: start,
-    end_time: end,
-  });
+  const rows = [];
+  const base = new Date(slotDate + "T00:00:00");
+  for (let week = 0; week <= repeatWeeks; week++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + week * 7);
+    rows.push({
+      slot_date: d.toISOString().slice(0, 10),
+      start_time: start,
+      end_time: end,
+    });
+  }
 
+  await supabase.from("availability").insert(rows);
   revalidatePath("/admin");
 }
 
@@ -57,5 +81,11 @@ export async function removeAvailability(id: string) {
 export async function adminDeleteTask(id: string) {
   const supabase = await createClient();
   await supabase.from("tasks").delete().eq("id", id);
+  revalidatePath("/admin");
+}
+
+export async function setClientBanned(id: string, banned: boolean) {
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ banned }).eq("id", id);
   revalidatePath("/admin");
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
-import { TaskCard } from "@/components/TaskCard";
-import { cancelTask } from "@/app/klant/actions";
+import { ClientTaskItem } from "@/app/klant/ClientTaskItem";
 import type { Task } from "@/lib/types/domain";
 
 export function KlantTaskList({ initialTasks }: { initialTasks: Task[] }) {
@@ -19,12 +18,7 @@ export function KlantTaskList({ initialTasks }: { initialTasks: Task[] }) {
       ) : (
         <div className="flex flex-col gap-3.5">
           {sorted.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              mode="client-owned"
-              onCancel={cancelTask.bind(null, task.id)}
-            />
+            <ClientTaskItem key={task.id} task={task} />
           ))}
         </div>
       )}

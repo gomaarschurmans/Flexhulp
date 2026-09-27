@@ -6,7 +6,9 @@ export interface Profile {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   role: Role;
+  banned: boolean;
   created_at: string;
 }
 
@@ -20,14 +22,17 @@ export interface Task {
   location: string;
   hours: number;
   rate_at_creation: number;
-  client_id: string;
+  client_id: string | null;
   client_name: string;
   client_email: string;
+  client_phone: string | null;
   student_id: string | null;
   student_name: string | null;
   student_email: string | null;
   status: TaskStatus;
   extra_info: string;
+  rating: number | null;
+  review_comment: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
@@ -48,6 +53,7 @@ export interface AvailabilitySlot {
 export interface PlatformSettings {
   id: number;
   hourly_rate: number;
+  cancellation_notice_hours: number;
   updated_at: string;
   updated_by: string | null;
 }

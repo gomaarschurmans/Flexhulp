@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
 import { taskAcceptedEmail, taskCompletedEmail } from "@/lib/resend/templates";
+import { sendSms } from "@/lib/sms";
+import { formatDateTime, formatEuro } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
 
 export async function acceptTask(id: string) {
@@ -49,6 +51,10 @@ export async function acceptTask(id: string) {
   } catch (e) {
     console.error("Bevestigingsmail versturen mislukt", e);
   }
+  await sendSms(
+    task.client_phone,
+    `Flexhulp: ${task.student_name} heeft je opdracht op ${formatDateTime(task.date, task.time)} geaccepteerd.`
+  );
 }
 
 export async function completeTask(id: string) {
@@ -82,4 +88,8 @@ export async function completeTask(id: string) {
   } catch (e) {
     console.error("Voltooiingsmail versturen mislukt", e);
   }
+  await sendSms(
+    task.client_phone,
+    `Flexhulp: '${task.title}' is voltooid. Uitbetaling: ${formatEuro(task.hours * task.rate_at_creation)}.`
+  );
 }

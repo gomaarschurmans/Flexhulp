@@ -15,3 +15,6 @@ export function getResend(): Resend {
 
 export const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL ?? "Flexhulp <noreply@flexhulp.be>";
+
+export const ADMIN_NOTIFICATION_EMAIL =
+  process.env.ADMIN_NOTIFICATION_EMAIL ?? "gomaar.schurmans@gmail.com";

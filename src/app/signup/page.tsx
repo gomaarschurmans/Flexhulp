@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signup, type AuthState } from "@/app/auth/actions";
+import { Turnstile } from "@/components/Turnstile";
 
 const initialState: AuthState = { error: null };
 
@@ -57,7 +58,16 @@ export default function SignupPage() {
           <label htmlFor="email">E-mailadres</label>
           <input id="email" name="email" type="email" required />
         </div>
-        <div className="field mb-2">
+        <div className="field mb-4">
+          <label htmlFor="phone">Telefoonnummer (optioneel)</label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="bv. 0470 12 34 56"
+          />
+        </div>
+        <div className="field mb-4">
           <label htmlFor="password">Wachtwoord</label>
           <input
             id="password"
@@ -67,13 +77,31 @@ export default function SignupPage() {
             required
           />
         </div>
+
+        <Turnstile />
+
+        <label className="mb-4 flex items-start gap-2 text-xs text-ink-soft">
+          <input type="checkbox" name="accept_terms" required className="mt-0.5" />
+          <span>
+            Ik ga akkoord met de{" "}
+            <Link href="/terms" target="_blank" className="text-navy underline">
+              algemene voorwaarden
+            </Link>{" "}
+            en de{" "}
+            <Link href="/privacy" target="_blank" className="text-navy underline">
+              privacyverklaring
+            </Link>
+            .
+          </span>
+        </label>
+
         {state.error && (
           <p className="mb-2 text-sm text-danger">{state.error}</p>
         )}
         <button
           type="submit"
           disabled={pending}
-          className="btn btn-navy mt-4 w-full"
+          className="btn btn-navy mt-2 w-full"
         >
           {pending ? "Bezig..." : "Registreren"}
         </button>

@@ -8,7 +8,9 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   name text not null,
+  phone text,
   role text not null default 'client' check (role in ('client','student','admin')),
+  banned boolean not null default false,
   created_at timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
@@ -17,8 +19,9 @@ alter table public.profiles enable row level security;
 create table public.platform_settings (
   id smallint primary key default 1 check (id = 1),
   hourly_rate numeric(10,2) not null default 15.00 check (hourly_rate > 0),
+  cancellation_notice_hours integer not null default 24 check (cancellation_notice_hours >= 0),
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.profiles(id)
+  updated_by uuid references public.profiles(id) on delete set null
 );
 insert into public.platform_settings (id, hourly_rate) values (1, 15.00);
 alter table public.platform_settings enable row level security;
@@ -45,14 +48,17 @@ create table public.tasks (
   location text not null,
   hours numeric(5,2) not null check (hours > 0),
   rate_at_creation numeric(10,2) not null,
-  client_id uuid not null references public.profiles(id),
+  client_id uuid references public.profiles(id) on delete set null,
   client_name text not null,
   client_email text not null,
-  student_id uuid references public.profiles(id),
+  client_phone text,
+  student_id uuid references public.profiles(id) on delete set null,
   student_name text,
   student_email text,
   status text not null default 'open' check (status in ('open','accepted','done')),
   extra_info text not null default '',
+  rating smallint check (rating between 1 and 5),
+  review_comment text,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz
@@ -100,11 +106,12 @@ begin
     chosen_role := 'client'; -- 'admin' kan nooit via signup-metadata binnenkomen
   end if;
 
-  insert into public.profiles (id, email, name, role)
+  insert into public.profiles (id, email, name, phone, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data ->> 'phone',
     chosen_role
   );
   return new;
@@ -118,7 +125,7 @@ create trigger on_auth_user_created
 -- Admin toekennen kan alleen via de Dashboard Table Editor (draait als postgres,
 -- omzeilt deze grants en RLS).
 revoke update on public.profiles from authenticated;
-grant update (name) on public.profiles to authenticated;
+grant update (name, phone) on public.profiles to authenticated;
 
 -- =========================================================
 -- Trigger: bewaakt geldige status-overgangen van een taak
@@ -129,8 +136,46 @@ grant update (name) on public.profiles to authenticated;
 create or replace function public.enforce_task_transitions()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  -- Geen ingelogde gebruiker in context = een service-role/backend-operatie
+  -- (bv. accountverwijdering), die al buiten RLS om vertrouwd wordt.
+  if auth.uid() is null then
+    return new;
+  end if;
+
   if public.get_my_role() = 'admin' then
     return new;
+  end if;
+
+  if public.get_my_role() = 'client' then
+    if old.client_id <> auth.uid() then
+      raise exception 'Dit is niet jouw taak.';
+    end if;
+
+    -- Eigen open taak bewerken: enkel beschrijvende velden mogen wijzigen.
+    if old.status = 'open' and new.status = 'open' then
+      if new.date <> old.date or new.time <> old.time or new.hours <> old.hours
+         or new.rate_at_creation <> old.rate_at_creation
+         or new.client_id <> old.client_id or new.student_id is not null
+         or new.rating is distinct from old.rating
+         or new.review_comment is distinct from old.review_comment then
+        raise exception 'Deze velden mag je niet aanpassen.';
+      end if;
+      return new;
+    end if;
+
+    -- Eigen voltooide taak beoordelen: enkel rating/review_comment mogen wijzigen.
+    if old.status = 'done' and new.status = 'done' then
+      if new.date <> old.date or new.time <> old.time or new.hours <> old.hours
+         or new.rate_at_creation <> old.rate_at_creation
+         or new.category <> old.category or new.description <> old.description
+         or new.location <> old.location or new.extra_info <> old.extra_info
+         or new.student_id is distinct from old.student_id then
+        raise exception 'Deze velden mag je niet aanpassen.';
+      end if;
+      return new;
+    end if;
+
+    raise exception 'Ongeldige aanpassing.';
   end if;
 
   if old.status = 'open' and new.status = 'accepted' then
@@ -211,10 +256,13 @@ begin
     raise exception 'Alleen klanten kunnen een tijdslot boeken.';
   end if;
 
-  select id, name, email into v_profile
+  select id, name, email, phone, banned into v_profile
   from public.profiles where id = auth.uid();
   if not found then
     raise exception 'Profiel niet gevonden.';
+  end if;
+  if v_profile.banned then
+    raise exception 'Je account is geblokkeerd. Neem contact op met Flexhulp.';
   end if;
 
   if p_category not in (
@@ -240,11 +288,12 @@ begin
 
   insert into public.tasks (
     title, category, description, date, time, location, hours,
-    rate_at_creation, client_id, client_name, client_email, status, extra_info
+    rate_at_creation, client_id, client_name, client_email, client_phone,
+    status, extra_info
   ) values (
     p_category, p_category, p_description, v_slot.slot_date, v_slot.start_time, p_location,
-    v_hours, v_rate, v_profile.id, v_profile.name, v_profile.email, 'open',
-    coalesce(p_extra_info, '')
+    v_hours, v_rate, v_profile.id, v_profile.name, v_profile.email, v_profile.phone,
+    'open', coalesce(p_extra_info, '')
   ) returning * into v_task;
 
   update public.availability set status = 'booked', task_id = v_task.id where id = p_slot_id;
@@ -304,3 +353,10 @@ create policy "tasks_update_student" on public.tasks for update
 
 create policy "tasks_update_admin" on public.tasks for update
   to authenticated using (public.get_my_role() = 'admin') with check (public.get_my_role() = 'admin');
+
+-- Klanten mogen hun eigen taak updaten (bewerken/beoordelen) — de
+-- enforce_task_transitions()-trigger bepaalt exact wat toegestaan is.
+create policy "tasks_update_own_client" on public.tasks for update
+  to authenticated
+  using (public.get_my_role() = 'client' and client_id = auth.uid())
+  with check (public.get_my_role() = 'client' and client_id = auth.uid());

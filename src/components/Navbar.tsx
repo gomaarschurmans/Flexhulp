@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Role } from "@/lib/types/domain";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -32,10 +33,13 @@ export function Navbar({ name, role }: { name: string; role: Role }) {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-2 text-sm">
+          <Link
+            href="/account"
+            className="flex items-center gap-2 text-sm hover:underline"
+          >
             <span className={`h-2 w-2 rounded-full ${ROLE_DOT[role]}`} />
             {name} · {ROLE_LABEL[role]}
-          </span>
+          </Link>
           <LogoutButton />
         </div>
       </div>

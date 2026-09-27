@@ -5,6 +5,7 @@ import { bookSlot, type BookSlotState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
 import { formatEuro, formatSlotRange, slotHours } from "@/lib/utils";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
+import { Turnstile } from "@/components/Turnstile";
 import type { AvailabilitySlot } from "@/lib/types/domain";
 
 const initialState: BookSlotState = { error: null };
@@ -101,6 +102,7 @@ export function CreateTaskForm({
             />
           </div>
           {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}
+          <Turnstile />
           {state.error && (
             <p className="mb-3 text-sm text-danger">{state.error}</p>
           )}

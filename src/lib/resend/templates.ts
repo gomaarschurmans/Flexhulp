@@ -33,6 +33,33 @@ export function taskCompletedEmail(task: Task) {
   };
 }
 
+export function newBookingAdminEmail(task: Task) {
+  return {
+    subject: `Nieuwe boeking: ${task.category} op ${formatDateTime(task.date, task.time)}`,
+    html: wrapper(
+      "Nieuwe boeking binnengekomen",
+      `<p><strong>${task.client_name}</strong> (${task.client_email}) heeft een tijdslot geboekt.</p>
+       <p>Categorie: <strong>${task.category}</strong><br/>
+       Gepland op: <strong>${formatDateTime(task.date, task.time)}</strong><br/>
+       Locatie: ${task.location}</p>
+       <p>Beschrijving: ${task.description}</p>
+       ${task.extra_info ? `<p>Extra info: ${task.extra_info}</p>` : ""}`
+    ),
+  };
+}
+
+export function taskCancelledAdminEmail(task: Task) {
+  return {
+    subject: `Boeking ingetrokken: ${task.category} op ${formatDateTime(task.date, task.time)}`,
+    html: wrapper(
+      "Klant heeft een boeking ingetrokken",
+      `<p><strong>${task.client_name}</strong> (${task.client_email}) heeft de boeking voor
+       <strong>${formatDateTime(task.date, task.time)}</strong> (${task.category}) ingetrokken.</p>
+       <p>Het tijdslot staat weer open voor andere klanten.</p>`
+    ),
+  };
+}
+
 export function welcomeEmail(name: string, role: "client" | "student") {
   const roleText =
     role === "client"
