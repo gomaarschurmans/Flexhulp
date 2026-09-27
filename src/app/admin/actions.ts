@@ -22,6 +22,7 @@ export async function updateRate(formData: FormData) {
     .eq("id", 1);
 
   revalidatePath("/admin");
+  revalidatePath("/klant");
 }
 
 export async function updateCancellationPolicy(formData: FormData) {
@@ -35,6 +36,7 @@ export async function updateCancellationPolicy(formData: FormData) {
     .eq("id", 1);
 
   revalidatePath("/admin");
+  revalidatePath("/klant");
 }
 
 export async function addAvailability(formData: FormData) {
@@ -63,12 +65,14 @@ export async function addAvailability(formData: FormData) {
 
   await supabase.from("availability").insert(rows);
   revalidatePath("/admin");
+  revalidatePath("/klant");
 }
 
 export async function removeAvailability(id: string) {
   const supabase = await createClient();
   await supabase.from("availability").delete().eq("id", id);
   revalidatePath("/admin");
+  revalidatePath("/klant");
 }
 
 export async function adminDeleteTask(id: string) {
