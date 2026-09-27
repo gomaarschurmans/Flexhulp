@@ -122,6 +122,13 @@ maar zijn aan te raden voor echt gebruik:
 - **Account-verwijdering (GDPR)**: vereist `SUPABASE_SERVICE_ROLE_KEY`
   (Supabase → Project Settings → API → `service_role` key). **Geheim** — nooit
   delen, nooit als `NEXT_PUBLIC_`-variabele zetten.
+- **Online betalen** ([Mollie](https://www.mollie.com), pay-per-transactie,
+  geen abonnement): maak een account aan, kopieer een API-sleutel
+  (Dashboard → Developers → API keys — begin met de `test_`-sleutel) naar
+  `MOLLIE_API_KEY`. Zodra jij een taak als voltooid markeert, krijgt de klant
+  automatisch een betaalverzoek (e-mail + "Betaal nu"-knop op `/klant`). De
+  webhook moet publiek bereikbaar zijn, dus dit werkt enkel op de deployed
+  site, niet op `localhost`.
 
 ## Databasemigraties
 
@@ -135,6 +142,7 @@ in `supabase/`, in volgorde:
 5. `migration_v3c_fix_trigger_timing.sql`
 6. `migration_v4_flexible_hours.sql` — klant kiest zelf een sub-tijdstip
    binnen een vrijgegeven venster (i.p.v. het hele blok te moeten boeken)
+7. `migration_v5_payments.sql` — betaalstatus-velden + Mollie-koppeling
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

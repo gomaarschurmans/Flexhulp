@@ -60,6 +60,24 @@ export function taskCancelledAdminEmail(task: Task) {
   };
 }
 
+export function paymentRequestEmail(task: Task, checkoutUrl: string) {
+  const amount = formatEuro(task.hours * task.rate_at_creation);
+  return {
+    subject: `Betaalverzoek: ${task.category} — ${amount}`,
+    html: wrapper(
+      "Je taak is voltooid",
+      `<p>Bedankt! <strong>${task.category}</strong> op
+       <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> is uitgevoerd.</p>
+       <p>Te betalen: <strong>${amount}</strong> (${task.hours} u × ${formatEuro(task.rate_at_creation)})</p>
+       <p style="margin-top: 20px;">
+         <a href="${checkoutUrl}" style="display: inline-block; background: #16181D; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+           Betaal nu
+         </a>
+       </p>`
+    ),
+  };
+}
+
 export function welcomeEmail(name: string, role: "client" | "student") {
   const roleText =
     role === "client"

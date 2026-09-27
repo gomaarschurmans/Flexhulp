@@ -9,6 +9,7 @@ import { getResend, FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/resend/cl
 import { newBookingAdminEmail, taskCancelledAdminEmail } from "@/lib/resend/templates";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
+import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { formatTimeRange } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
 
@@ -133,6 +134,36 @@ export async function cancelTask(id: string) {
   );
 
   revalidatePath("/klant");
+}
+
+export async function payTask(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", id)
+    .eq("client_id", user.id)
+    .eq("status", "done")
+    .single<Task>();
+  if (!task || task.payment_status === "paid") return;
+
+  let checkoutUrl: string | null = null;
+  try {
+    checkoutUrl = await getOrCreateTaskPayment(task);
+  } catch (e) {
+    console.error("Mollie-betaling aanmaken mislukt", e);
+  }
+
+  if (!checkoutUrl) {
+    redirect("/klant?error=payment_unavailable");
+  }
+
+  redirect(checkoutUrl);
 }
 
 const editTaskSchema = z.object({

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import {
   cancelTask,
   editTask,
+  payTask,
   submitReview,
   type EditTaskState,
   type ReviewState,
@@ -163,6 +164,22 @@ export function ClientTaskItem({ task }: { task: Task }) {
         <span className="text-sm text-ink-soft">
           Toegewezen aan <strong className="text-ink">{task.student_name}</strong>
         </span>
+      )}
+
+      {task.status === "done" && (
+        <div className="mt-2 border-t border-line pt-3.5">
+          {task.payment_status === "paid" ? (
+            <span className="rounded-full bg-teal-soft px-2.5 py-1 text-xs font-semibold text-teal">
+              Betaald
+            </span>
+          ) : (
+            <form action={payTask.bind(null, task.id)}>
+              <button type="submit" className="btn btn-navy text-xs px-3.5 py-2">
+                Betaal nu ({formatEuro(task.hours * task.rate_at_creation)})
+              </button>
+            </form>
+          )}
+        </div>
       )}
 
       {task.status === "done" && task.rating === null && (

@@ -4,8 +4,18 @@ import { useMemo, useState } from "react";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
+import { markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
-import type { AvailabilitySlot, Task } from "@/lib/types/domain";
+import type { AvailabilitySlot, PaymentStatus, Task } from "@/lib/types/domain";
+
+const PAYMENT_LABELS: Record<PaymentStatus, string> = {
+  unpaid: "Nog niet betaald",
+  pending: "Wacht op betaling",
+  paid: "Betaald",
+  failed: "Betaling mislukt",
+  expired: "Betaalverzoek verlopen",
+  canceled: "Betaling geannuleerd",
+};
 
 const MONTH_NAMES = [
   "januari", "februari", "maart", "april", "mei", "juni",
@@ -222,9 +232,21 @@ function DayDetail({
                   </p>
                 )}
                 {t.extra_info && (
-                  <p>
+                  <p className="mb-1">
                     <strong>Extra info:</strong> {t.extra_info}
                   </p>
+                )}
+                {t.status === "done" && (
+                  <p className="mb-2">
+                    <strong>Betaling:</strong> {PAYMENT_LABELS[t.payment_status]}
+                  </p>
+                )}
+                {t.status === "open" && (
+                  <form action={markTaskDone.bind(null, t.id)}>
+                    <button type="submit" className="btn btn-ghost px-3 py-1.5 text-xs">
+                      Markeer voltooid
+                    </button>
+                  </form>
                 )}
               </div>
             ))}

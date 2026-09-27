@@ -2,6 +2,14 @@ export type Role = "client" | "student" | "admin";
 
 export type TaskStatus = "open" | "accepted" | "done";
 
+export type PaymentStatus =
+  | "unpaid"
+  | "pending"
+  | "paid"
+  | "failed"
+  | "expired"
+  | "canceled";
+
 export interface Profile {
   id: string;
   email: string;
@@ -35,6 +43,9 @@ export interface Task {
   rating: number | null;
   review_comment: string | null;
   window_id: string | null;
+  payment_status: PaymentStatus;
+  mollie_payment_id: string | null;
+  paid_at: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;

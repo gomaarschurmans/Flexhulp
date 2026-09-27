@@ -3,9 +3,27 @@
 import { useMemo } from "react";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
-import { adminDeleteTask } from "@/app/admin/actions";
+import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
-import type { Task } from "@/lib/types/domain";
+import type { PaymentStatus, Task } from "@/lib/types/domain";
+
+const PAYMENT_LABELS: Record<PaymentStatus, string> = {
+  unpaid: "–",
+  pending: "Wacht op betaling",
+  paid: "Betaald",
+  failed: "Mislukt",
+  expired: "Verlopen",
+  canceled: "Geannuleerd",
+};
+
+const PAYMENT_STYLES: Record<PaymentStatus, string> = {
+  unpaid: "text-ink-soft",
+  pending: "text-amber-deep",
+  paid: "text-teal",
+  failed: "text-danger",
+  expired: "text-ink-soft",
+  canceled: "text-ink-soft",
+};
 
 export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
   const tasks = useRealtimeTasks(initialTasks);
@@ -42,13 +60,14 @@ export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
               <th className="border-b border-line px-3.5 py-2.5 font-semibold">Uren</th>
               <th className="border-b border-line px-3.5 py-2.5 font-semibold">Uitbetaling</th>
               <th className="border-b border-line px-3.5 py-2.5 font-semibold">Status</th>
+              <th className="border-b border-line px-3.5 py-2.5 font-semibold">Betaling</th>
               <th className="border-b border-line px-3.5 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3.5 py-6 text-ink-soft">
+                <td colSpan={8} className="px-3.5 py-6 text-ink-soft">
                   Nog geen taken op het platform.
                 </td>
               </tr>
@@ -65,12 +84,24 @@ export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
                   <td className="border-b border-line px-3.5 py-2.5">
                     <StatusBadge status={t.status} />
                   </td>
+                  <td className={`border-b border-line px-3.5 py-2.5 ${PAYMENT_STYLES[t.payment_status]}`}>
+                    {PAYMENT_LABELS[t.payment_status]}
+                  </td>
                   <td className="border-b border-line px-3.5 py-2.5">
-                    <form action={adminDeleteTask.bind(null, t.id)}>
-                      <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
-                        Verwijder
-                      </button>
-                    </form>
+                    <div className="flex gap-2">
+                      {t.status === "open" && (
+                        <form action={markTaskDone.bind(null, t.id)}>
+                          <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
+                            Markeer voltooid
+                          </button>
+                        </form>
+                      )}
+                      <form action={adminDeleteTask.bind(null, t.id)}>
+                        <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
+                          Verwijder
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))

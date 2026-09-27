@@ -75,6 +75,10 @@ create table public.tasks (
   rating smallint check (rating between 1 and 5),
   review_comment text,
   window_id uuid references public.availability(id) on delete set null,
+  payment_status text not null default 'unpaid'
+    check (payment_status in ('unpaid','pending','paid','failed','expired','canceled')),
+  mollie_payment_id text,
+  paid_at timestamptz,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz
@@ -150,13 +154,19 @@ begin
     end if;
 
     -- Eigen open taak bewerken: enkel beschrijvende velden mogen wijzigen.
+    -- payment_status/mollie_payment_id/paid_at zijn hier ook geblokkeerd:
+    -- enkel de backend (service-role, die deze trigger overslaat) mag een
+    -- betaling aanmaken of bevestigen.
     if old.status = 'open' and new.status = 'open' then
       if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
          or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
          or new.client_id <> old.client_id or new.student_id is not null
          or new.window_id is distinct from old.window_id
          or new.rating is distinct from old.rating
-         or new.review_comment is distinct from old.review_comment then
+         or new.review_comment is distinct from old.review_comment
+         or new.payment_status is distinct from old.payment_status
+         or new.mollie_payment_id is distinct from old.mollie_payment_id
+         or new.paid_at is distinct from old.paid_at then
         raise exception 'Deze velden mag je niet aanpassen.';
       end if;
       return new;
@@ -168,7 +178,10 @@ begin
          or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
          or new.category <> old.category or new.description <> old.description
          or new.location <> old.location or new.extra_info <> old.extra_info
-         or new.student_id is distinct from old.student_id then
+         or new.student_id is distinct from old.student_id
+         or new.payment_status is distinct from old.payment_status
+         or new.mollie_payment_id is distinct from old.mollie_payment_id
+         or new.paid_at is distinct from old.paid_at then
         raise exception 'Deze velden mag je niet aanpassen.';
       end if;
       return new;

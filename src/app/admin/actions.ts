@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
+import { getResend, FROM_EMAIL } from "@/lib/resend/client";
+import { paymentRequestEmail } from "@/lib/resend/templates";
+import type { Task } from "@/lib/types/domain";
 
 export async function updateRate(formData: FormData) {
   const rate = parseFloat(String(formData.get("hourly_rate") ?? ""));
@@ -71,6 +75,40 @@ export async function addAvailability(formData: FormData) {
 export async function removeAvailability(id: string) {
   const supabase = await createClient();
   await supabase.from("availability").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/klant");
+}
+
+export async function markTaskDone(id: string) {
+  const supabase = await createClient();
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", id)
+    .eq("status", "open")
+    .single<Task>();
+  if (!task) return;
+
+  await supabase
+    .from("tasks")
+    .update({ status: "done", completed_at: new Date().toISOString() })
+    .eq("id", id);
+
+  try {
+    const checkoutUrl = await getOrCreateTaskPayment(task);
+    if (checkoutUrl) {
+      const { subject, html } = paymentRequestEmail(task, checkoutUrl);
+      await getResend().emails.send({
+        from: FROM_EMAIL,
+        to: task.client_email,
+        subject,
+        html,
+      });
+    }
+  } catch (e) {
+    console.error("Betaalverzoek aanmaken/versturen mislukt", e);
+  }
+
   revalidatePath("/admin");
   revalidatePath("/klant");
 }
