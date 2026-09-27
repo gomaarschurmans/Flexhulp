@@ -34,19 +34,12 @@ export function AdminAvailabilityList({
               month: "short",
             })}
             , {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
-            {s.status === "booked" && (
-              <span className="rounded-full bg-[#FCEFD8] px-2.5 py-1 text-xs font-semibold text-amber-deep">
-                Geboekt
-              </span>
-            )}
           </span>
-          {s.status === "open" && (
-            <form action={removeAvailability.bind(null, s.id)}>
-              <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
-                Verwijder
-              </button>
-            </form>
-          )}
+          <form action={removeAvailability.bind(null, s.id)}>
+            <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
+              Verwijder
+            </button>
+          </form>
         </div>
       ))}
     </div>

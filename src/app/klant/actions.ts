@@ -9,25 +9,34 @@ import { getResend, FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/resend/cl
 import { newBookingAdminEmail, taskCancelledAdminEmail } from "@/lib/resend/templates";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
-import { formatDateTime } from "@/lib/utils";
+import { formatTimeRange } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
 
-const bookSlotSchema = z.object({
-  slot_id: z.string().uuid("Kies een tijdslot."),
-  category: z.enum(CATEGORIES),
-  description: z.string().trim().min(1, "Geef een beschrijving van de klus."),
-  location: z.string().trim().min(1, "Geef een locatie op."),
-  extra_info: z.string().trim().default(""),
-});
+const bookTimeRangeSchema = z
+  .object({
+    window_id: z.string().uuid("Kies een dag."),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/, "Kies een starttijd."),
+    end_time: z.string().regex(/^\d{2}:\d{2}$/, "Kies een eindtijd."),
+    category: z.enum(CATEGORIES),
+    description: z.string().trim().min(1, "Geef een beschrijving van de klus."),
+    location: z.string().trim().min(1, "Geef een locatie op."),
+    extra_info: z.string().trim().default(""),
+  })
+  .refine((data) => data.end_time > data.start_time, {
+    message: "Eindtijd moet na starttijd liggen.",
+    path: ["end_time"],
+  });
 
 export type BookSlotState = { error: string | null };
 
-export async function bookSlot(
+export async function bookTimeRange(
   _prevState: BookSlotState,
   formData: FormData
 ): Promise<BookSlotState> {
-  const parsed = bookSlotSchema.safeParse({
-    slot_id: formData.get("slot_id"),
+  const parsed = bookTimeRangeSchema.safeParse({
+    window_id: formData.get("window_id"),
+    start_time: formData.get("start_time"),
+    end_time: formData.get("end_time"),
     category: formData.get("category"),
     description: formData.get("description"),
     location: formData.get("location"),
@@ -45,8 +54,10 @@ export async function bookSlot(
 
   const supabase = await createClient();
   const { data: task, error } = await supabase
-    .rpc("book_slot", {
-      p_slot_id: parsed.data.slot_id,
+    .rpc("book_time_range", {
+      p_window_id: parsed.data.window_id,
+      p_start_time: parsed.data.start_time,
+      p_end_time: parsed.data.end_time,
       p_category: parsed.data.category,
       p_description: parsed.data.description,
       p_location: parsed.data.location,
@@ -72,7 +83,7 @@ export async function bookSlot(
   }
   await sendSms(
     ADMIN_NOTIFICATION_PHONE,
-    `Nieuwe boeking: ${task.category} op ${formatDateTime(task.date, task.time)} — ${task.client_name}`
+    `Nieuwe boeking: ${task.category} op ${formatTimeRange(task.date, task.time, task.end_time)} — ${task.client_name}`
   );
 
   revalidatePath("/klant");
@@ -118,7 +129,7 @@ export async function cancelTask(id: string) {
   }
   await sendSms(
     ADMIN_NOTIFICATION_PHONE,
-    `Boeking ingetrokken: ${task.category} op ${formatDateTime(task.date, task.time)}`
+    `Boeking ingetrokken: ${task.category} op ${formatTimeRange(task.date, task.time, task.end_time)}`
   );
 
   revalidatePath("/klant");

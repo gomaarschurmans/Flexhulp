@@ -25,7 +25,10 @@ export default async function KlantPage({
       .select("*")
       .eq("client_id", user!.id)
       .order("created_at", { ascending: false }),
-    supabase.from("availability").select("*").eq("status", "open"),
+    supabase
+      .from("availability")
+      .select("*")
+      .gte("slot_date", new Date().toISOString().slice(0, 10)),
   ]);
 
   return (

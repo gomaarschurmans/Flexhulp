@@ -67,13 +67,6 @@ export async function addAvailability(formData: FormData) {
 
 export async function removeAvailability(id: string) {
   const supabase = await createClient();
-  const { data: slot } = await supabase
-    .from("availability")
-    .select("status")
-    .eq("id", id)
-    .single();
-  if (slot?.status === "booked") return;
-
   await supabase.from("availability").delete().eq("id", id);
   revalidatePath("/admin");
 }

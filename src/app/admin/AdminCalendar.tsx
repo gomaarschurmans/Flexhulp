@@ -32,7 +32,6 @@ export function AdminCalendar({
   const openByDate = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of slots) {
-      if (s.status !== "open") continue;
       map.set(s.slot_date, (map.get(s.slot_date) ?? 0) + 1);
     }
     return map;

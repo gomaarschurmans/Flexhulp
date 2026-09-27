@@ -9,7 +9,7 @@ import {
   type ReviewState,
 } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
-import { formatDateTime, formatEuro } from "@/lib/utils";
+import { formatTimeRange, formatEuro } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Task } from "@/lib/types/domain";
 
@@ -133,7 +133,7 @@ export function ClientTaskItem({ task }: { task: Task }) {
       <div className="mb-3 flex flex-wrap gap-3.5 text-sm text-ink-soft">
         <span>
           <strong className="text-ink">
-            {formatDateTime(task.date, task.time)}
+            {formatTimeRange(task.date, task.time, task.end_time)}
           </strong>
         </span>
         <span>{task.location || "Locatie onbekend"}</span>

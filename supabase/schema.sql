@@ -26,6 +26,20 @@ create table public.platform_settings (
 insert into public.platform_settings (id, hourly_rate) values (1, 15.00);
 alter table public.platform_settings enable row level security;
 
+-- ---------- availability (tijdvensters die de admin vrijgeeft; klanten
+-- boeken zelf een sub-tijdstip binnen zo'n venster via book_time_range(),
+-- meerdere boekingen per venster zijn dus mogelijk) ----------
+create table public.availability (
+  id uuid primary key default gen_random_uuid(),
+  slot_date date not null,
+  start_time time not null,
+  end_time time not null,
+  created_at timestamptz not null default now(),
+  constraint availability_time_order check (end_time > start_time)
+);
+alter table public.availability enable row level security;
+alter publication supabase_realtime add table public.availability;
+
 -- ---------- tasks ----------
 create table public.tasks (
   id uuid primary key default gen_random_uuid(),
@@ -45,6 +59,7 @@ create table public.tasks (
   description text not null default '',
   date date not null,
   time time not null,
+  end_time time not null,
   location text not null,
   hours numeric(5,2) not null check (hours > 0),
   rate_at_creation numeric(10,2) not null,
@@ -59,31 +74,13 @@ create table public.tasks (
   extra_info text not null default '',
   rating smallint check (rating between 1 and 5),
   review_comment text,
+  window_id uuid references public.availability(id) on delete set null,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz
 );
 alter table public.tasks enable row level security;
 alter publication supabase_realtime add table public.tasks;
-
--- ---------- availability (concrete, eenmalig boekbare tijdsloten) ----------
-create table public.availability (
-  id uuid primary key default gen_random_uuid(),
-  slot_date date not null,
-  start_time time not null,
-  end_time time not null,
-  status text not null default 'open' check (status in ('open','booked')),
-  task_id uuid references public.tasks(id) on delete set null,
-  created_at timestamptz not null default now(),
-  constraint availability_time_order check (end_time > start_time)
-  -- Geen check-constraint die open<=>task_id-null afdwingt: dat botst met
-  -- Postgres' eigen "on delete set null"-actie op task_id (die enkel dat
-  -- ene veld zet, in een aparte stap vóór onze eigen trigger de status
-  -- terugzet), zie migration_v3b_fix_slot_release.sql. book_slot() en
-  -- release_slot_on_task_delete() houden dit zelf consistent.
-);
-alter table public.availability enable row level security;
-alter publication supabase_realtime add table public.availability;
 
 -- =========================================================
 -- Helper: rol van de ingelogde gebruiker (SECURITY DEFINER voorkomt RLS-recursie op profiles)
@@ -154,9 +151,10 @@ begin
 
     -- Eigen open taak bewerken: enkel beschrijvende velden mogen wijzigen.
     if old.status = 'open' and new.status = 'open' then
-      if new.date <> old.date or new.time <> old.time or new.hours <> old.hours
-         or new.rate_at_creation <> old.rate_at_creation
+      if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
+         or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
          or new.client_id <> old.client_id or new.student_id is not null
+         or new.window_id is distinct from old.window_id
          or new.rating is distinct from old.rating
          or new.review_comment is distinct from old.review_comment then
         raise exception 'Deze velden mag je niet aanpassen.';
@@ -166,8 +164,8 @@ begin
 
     -- Eigen voltooide taak beoordelen: enkel rating/review_comment mogen wijzigen.
     if old.status = 'done' and new.status = 'done' then
-      if new.date <> old.date or new.time <> old.time or new.hours <> old.hours
-         or new.rate_at_creation <> old.rate_at_creation
+      if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
+         or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
          or new.category <> old.category or new.description <> old.description
          or new.location <> old.location or new.extra_info <> old.extra_info
          or new.student_id is distinct from old.student_id then
@@ -227,7 +225,7 @@ create policy "settings_update_admin_only" on public.platform_settings for updat
 -- =========================================================
 -- RLS — availability
 -- Klanten krijgen geen rechtstreeks schrijfrecht: boeken loopt uitsluitend
--- via de SECURITY DEFINER-functie book_slot() hieronder.
+-- via de SECURITY DEFINER-functie book_time_range() hieronder.
 -- =========================================================
 create policy "availability_select_all_authenticated" on public.availability for select
   to authenticated using (true);
@@ -236,10 +234,15 @@ create policy "availability_admin_write" on public.availability for all
   to authenticated using (public.get_my_role() = 'admin') with check (public.get_my_role() = 'admin');
 
 -- =========================================================
--- Functie: atomair en race-safe een tijdslot boeken
+-- Functie: race-safe een eigen tijdstip boeken binnen een vrijgegeven venster.
+-- Beschikbaarheid wordt altijd dynamisch berekend (venster minus bestaande
+-- boekingen) — een taak verwijderen maakt dus automatisch weer ruimte vrij,
+-- zonder aparte trigger nodig te hebben.
 -- =========================================================
-create or replace function public.book_slot(
-  p_slot_id uuid,
+create or replace function public.book_time_range(
+  p_window_id uuid,
+  p_start_time time,
+  p_end_time time,
   p_category text,
   p_description text,
   p_location text,
@@ -247,14 +250,15 @@ create or replace function public.book_slot(
 ) returns public.tasks
 language plpgsql security definer set search_path = public as $$
 declare
-  v_slot    record;
+  v_window  record;
   v_rate    numeric(10,2);
   v_hours   numeric(5,2);
   v_profile record;
+  v_overlap boolean;
   v_task    public.tasks;
 begin
   if public.get_my_role() <> 'client' then
-    raise exception 'Alleen klanten kunnen een tijdslot boeken.';
+    raise exception 'Alleen klanten kunnen een tijdstip boeken.';
   end if;
 
   select id, name, email, phone, banned into v_profile
@@ -275,49 +279,48 @@ begin
     raise exception 'Ongeldige categorie.';
   end if;
 
-  select * into v_slot from public.availability where id = p_slot_id for update;
+  if p_end_time <= p_start_time then
+    raise exception 'Eindtijd moet na starttijd liggen.';
+  end if;
 
+  -- Rij-lock op het venster: seriële afhandeling van gelijktijdige
+  -- boekingspogingen binnen hetzelfde venster.
+  select * into v_window from public.availability where id = p_window_id for update;
   if not found then
-    raise exception 'Tijdslot bestaat niet.';
+    raise exception 'Tijdvenster bestaat niet.';
   end if;
-  if v_slot.status <> 'open' then
-    raise exception 'Dit tijdslot is niet meer beschikbaar.';
+  if p_start_time < v_window.start_time or p_end_time > v_window.end_time then
+    raise exception 'Kies een tijdstip binnen het beschikbare venster.';
   end if;
 
-  v_hours := extract(epoch from (v_slot.end_time - v_slot.start_time)) / 3600.0;
+  select exists (
+    select 1 from public.tasks
+    where date = v_window.slot_date
+      and time < p_end_time
+      and end_time > p_start_time
+  ) into v_overlap;
+  if v_overlap then
+    raise exception 'Dit tijdstip overlapt met een al bestaande boeking.';
+  end if;
+
+  v_hours := extract(epoch from (p_end_time - p_start_time)) / 3600.0;
   select hourly_rate into v_rate from public.platform_settings where id = 1;
 
   insert into public.tasks (
-    title, category, description, date, time, location, hours,
+    title, category, description, date, time, end_time, location, hours,
     rate_at_creation, client_id, client_name, client_email, client_phone,
-    status, extra_info
+    status, extra_info, window_id
   ) values (
-    p_category, p_category, p_description, v_slot.slot_date, v_slot.start_time, p_location,
-    v_hours, v_rate, v_profile.id, v_profile.name, v_profile.email, v_profile.phone,
-    'open', coalesce(p_extra_info, '')
+    p_category, p_category, p_description, v_window.slot_date, p_start_time, p_end_time,
+    p_location, v_hours, v_rate, v_profile.id, v_profile.name, v_profile.email, v_profile.phone,
+    'open', coalesce(p_extra_info, ''), p_window_id
   ) returning * into v_task;
-
-  update public.availability set status = 'booked', task_id = v_task.id where id = p_slot_id;
 
   return v_task;
 end;
 $$;
-revoke all on function public.book_slot(uuid, text, text, text, text) from public;
-grant execute on function public.book_slot(uuid, text, text, text, text) to authenticated;
-
--- =========================================================
--- Trigger: slot terug vrijgeven als de bijhorende taak verwijderd wordt
--- =========================================================
-create or replace function public.release_slot_on_task_delete()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  update public.availability set status = 'open', task_id = null where task_id = old.id;
-  return old;
-end;
-$$;
-create trigger tasks_release_slot_before_delete
-  before delete on public.tasks
-  for each row execute function public.release_slot_on_task_delete();
+revoke all on function public.book_time_range(uuid, time, time, text, text, text, text) from public;
+grant execute on function public.book_time_range(uuid, time, time, text, text, text, text) to authenticated;
 
 -- =========================================================
 -- RLS — tasks

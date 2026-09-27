@@ -131,6 +131,10 @@ in `supabase/`, in volgorde:
 1. `schema.sql` — volledig schema (enkel nodig bij een nieuw project vanaf nul)
 2. `migration_slot_booking.sql`
 3. `migration_v3_business_features.sql`
+4. `migration_v3b_fix_slot_release.sql`
+5. `migration_v3c_fix_trigger_timing.sql`
+6. `migration_v4_flexible_hours.sql` — klant kiest zelf een sub-tijdstip
+   binnen een vrijgegeven venster (i.p.v. het hele blok te moeten boeken)
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

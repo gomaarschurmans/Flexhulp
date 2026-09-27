@@ -1,4 +1,4 @@
-import { formatDateTime, formatEuro } from "@/lib/utils";
+import { formatDateTime, formatEuro, formatTimeRange } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
 
 const wrapper = (title: string, bodyHtml: string) => `
@@ -38,9 +38,9 @@ export function newBookingAdminEmail(task: Task) {
     subject: `Nieuwe boeking: ${task.category} op ${formatDateTime(task.date, task.time)}`,
     html: wrapper(
       "Nieuwe boeking binnengekomen",
-      `<p><strong>${task.client_name}</strong> (${task.client_email}) heeft een tijdslot geboekt.</p>
+      `<p><strong>${task.client_name}</strong> (${task.client_email}) heeft een tijdstip geboekt.</p>
        <p>Categorie: <strong>${task.category}</strong><br/>
-       Gepland op: <strong>${formatDateTime(task.date, task.time)}</strong><br/>
+       Gepland op: <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong><br/>
        Locatie: ${task.location}</p>
        <p>Beschrijving: ${task.description}</p>
        ${task.extra_info ? `<p>Extra info: ${task.extra_info}</p>` : ""}`
@@ -54,8 +54,8 @@ export function taskCancelledAdminEmail(task: Task) {
     html: wrapper(
       "Klant heeft een boeking ingetrokken",
       `<p><strong>${task.client_name}</strong> (${task.client_email}) heeft de boeking voor
-       <strong>${formatDateTime(task.date, task.time)}</strong> (${task.category}) ingetrokken.</p>
-       <p>Het tijdslot staat weer open voor andere klanten.</p>`
+       <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> (${task.category}) ingetrokken.</p>
+       <p>Dit tijdstip staat weer open voor andere klanten.</p>`
     ),
   };
 }

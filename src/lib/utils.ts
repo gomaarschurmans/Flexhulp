@@ -31,12 +31,12 @@ export function formatDateTime(date: string, time: string): string {
   return out;
 }
 
-export function formatSlotRange(
-  slotDate: string,
+export function formatTimeRange(
+  date: string,
   startTime: string,
   endTime: string
 ): string {
-  return `${formatDateTime(slotDate, startTime)}–${endTime.slice(0, 5)}`;
+  return `${formatDateTime(date, startTime)}–${endTime.slice(0, 5)}`;
 }
 
 export function slotHours(startTime: string, endTime: string): number {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
-import { bookSlot, type BookSlotState } from "@/app/klant/actions";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { bookTimeRange, type BookSlotState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
-import { formatEuro, formatSlotRange, slotHours } from "@/lib/utils";
+import { formatEuro, formatDateTime, slotHours } from "@/lib/utils";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
 import { Turnstile } from "@/components/Turnstile";
 import type { AvailabilitySlot } from "@/lib/types/domain";
@@ -17,22 +17,32 @@ export function CreateTaskForm({
   rate: number;
   initialSlots: AvailabilitySlot[];
 }) {
-  const [state, formAction, pending] = useActionState(bookSlot, initialState);
-  const slots = useRealtimeAvailability(initialSlots).filter(
-    (s) => s.status === "open"
-  );
-  const [slotId, setSlotId] = useState(slots[0]?.id ?? "");
+  const [state, formAction, pending] = useActionState(bookTimeRange, initialState);
+  const slots = useRealtimeAvailability(initialSlots);
+  const [windowId, setWindowId] = useState(slots[0]?.id ?? "");
+  const [startTime, setStartTime] = useState(slots[0]?.start_time.slice(0, 5) ?? "");
+  const [endTime, setEndTime] = useState(slots[0]?.end_time.slice(0, 5) ?? "");
 
-  const selectedSlot = useMemo(
-    () => slots.find((s) => s.id === slotId),
-    [slots, slotId]
+  const selectedWindow = useMemo(
+    () => slots.find((s) => s.id === windowId),
+    [slots, windowId]
   );
-  const preview = selectedSlot
-    ? (() => {
-        const hours = slotHours(selectedSlot.start_time, selectedSlot.end_time);
-        return `Geschatte vergoeding: ${formatEuro(hours * rate)} (${hours} u × ${formatEuro(rate)})`;
-      })()
-    : "";
+
+  useEffect(() => {
+    if (selectedWindow) {
+      setStartTime(selectedWindow.start_time.slice(0, 5));
+      setEndTime(selectedWindow.end_time.slice(0, 5));
+    }
+  }, [selectedWindow]);
+
+  const hours =
+    startTime && endTime && endTime > startTime
+      ? slotHours(startTime, endTime)
+      : 0;
+  const preview =
+    selectedWindow && hours > 0
+      ? `Geschatte vergoeding: ${formatEuro(hours * rate)} (${hours} u × ${formatEuro(rate)})`
+      : "";
 
   return (
     <div className="card">
@@ -50,20 +60,51 @@ export function CreateTaskForm({
       ) : (
         <form action={formAction}>
           <div className="field mb-4">
-            <label htmlFor="slot_id">Kies een tijdslot</label>
+            <label htmlFor="window_id">Kies een dag</label>
             <select
-              id="slot_id"
-              name="slot_id"
-              value={slotId}
-              onChange={(e) => setSlotId(e.target.value)}
+              id="window_id"
+              name="window_id"
+              value={windowId}
+              onChange={(e) => setWindowId(e.target.value)}
             >
               {slots.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {formatSlotRange(s.slot_date, s.start_time, s.end_time)}
+                  {formatDateTime(s.slot_date, s.start_time)}–
+                  {s.end_time.slice(0, 5)} beschikbaar
                 </option>
               ))}
             </select>
           </div>
+          {selectedWindow && (
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="field">
+                <label htmlFor="start_time">Van</label>
+                <input
+                  id="start_time"
+                  name="start_time"
+                  type="time"
+                  value={startTime}
+                  min={selectedWindow.start_time.slice(0, 5)}
+                  max={selectedWindow.end_time.slice(0, 5)}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="end_time">Tot</label>
+                <input
+                  id="end_time"
+                  name="end_time"
+                  type="time"
+                  value={endTime}
+                  min={selectedWindow.start_time.slice(0, 5)}
+                  max={selectedWindow.end_time.slice(0, 5)}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
           <div className="field mb-4">
             <label htmlFor="category">Categorie</label>
             <select id="category" name="category" defaultValue={CATEGORIES[0]}>
@@ -107,7 +148,7 @@ export function CreateTaskForm({
             <p className="mb-3 text-sm text-danger">{state.error}</p>
           )}
           <button type="submit" disabled={pending} className="btn btn-navy w-full">
-            {pending ? "Bezig..." : "Tijdslot boeken"}
+            {pending ? "Bezig..." : "Tijdstip boeken"}
           </button>
         </form>
       )}
