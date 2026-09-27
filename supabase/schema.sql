@@ -75,11 +75,12 @@ create table public.availability (
   status text not null default 'open' check (status in ('open','booked')),
   task_id uuid references public.tasks(id) on delete set null,
   created_at timestamptz not null default now(),
-  constraint availability_time_order check (end_time > start_time),
-  constraint availability_booked_has_task check (
-    (status = 'open' and task_id is null) or
-    (status = 'booked' and task_id is not null)
-  )
+  constraint availability_time_order check (end_time > start_time)
+  -- Geen check-constraint die open<=>task_id-null afdwingt: dat botst met
+  -- Postgres' eigen "on delete set null"-actie op task_id (die enkel dat
+  -- ene veld zet, in een aparte stap vóór onze eigen trigger de status
+  -- terugzet), zie migration_v3b_fix_slot_release.sql. book_slot() en
+  -- release_slot_on_task_delete() houden dit zelf consistent.
 );
 alter table public.availability enable row level security;
 alter publication supabase_realtime add table public.availability;
@@ -314,8 +315,8 @@ begin
   return old;
 end;
 $$;
-create trigger tasks_release_slot_after_delete
-  after delete on public.tasks
+create trigger tasks_release_slot_before_delete
+  before delete on public.tasks
   for each row execute function public.release_slot_on_task_delete();
 
 -- =========================================================

@@ -61,7 +61,7 @@ export default async function Home() {
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/signup" className="btn btn-navy px-6 py-3">
-              Aan de slag als klant
+              Registreer
             </Link>
             <Link href="/login" className="btn btn-ghost px-6 py-3">
               Al een account? Log in
@@ -77,7 +77,7 @@ export default async function Home() {
                 <div className="mb-3 h-2 w-10 rounded-full bg-navy" />
                 <h3 className="mb-2 text-lg">1. Maak een account</h3>
                 <p className="text-sm text-ink-soft">
-                  Registreer gratis als klant, in minder dan een minuut.
+                  Registreer gratis, in minder dan een minuut.
                 </p>
               </div>
               <div>
