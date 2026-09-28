@@ -14,22 +14,27 @@ export default async function KlantPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: settings }, { data: tasks }, { data: slots }] = await Promise.all([
-    supabase
-      .from("platform_settings")
-      .select("hourly_rate, cancellation_notice_hours")
-      .eq("id", 1)
-      .single(),
-    supabase
-      .from("tasks")
-      .select("*")
-      .eq("client_id", user!.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("availability")
-      .select("*")
-      .gte("slot_date", new Date().toISOString().slice(0, 10)),
-  ]);
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  const [{ data: settings }, { data: tasks }, { data: slots }, { data: busyTasks }] =
+    await Promise.all([
+      supabase
+        .from("platform_settings")
+        .select("hourly_rate, cancellation_notice_hours")
+        .eq("id", 1)
+        .single(),
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("client_id", user!.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("availability").select("*").gte("slot_date", todayISO),
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("status", "open")
+        .gte("date", todayISO),
+    ]);
 
   return (
     <div>
@@ -48,6 +53,7 @@ export default async function KlantPage({
         <CreateTaskForm
           rate={settings?.hourly_rate ?? 0}
           initialSlots={sortAvailability(slots ?? [])}
+          initialBusyTasks={busyTasks ?? []}
         />
         <KlantTaskList initialTasks={tasks ?? []} />
       </div>

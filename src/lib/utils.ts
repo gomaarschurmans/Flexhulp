@@ -45,6 +45,52 @@ export function slotHours(startTime: string, endTime: string): number {
   return (eh * 60 + em - (sh * 60 + sm)) / 60;
 }
 
+export interface TimeRange {
+  start: string;
+  end: string;
+}
+
+/**
+ * Geeft de vrije tijdsblokken binnen [windowStart, windowEnd) terug, na
+ * aftrek van reeds bezette bereiken (bv. bestaande boekingen op diezelfde
+ * dag). Overlappende/aansluitende bezette bereiken worden eerst
+ * samengevoegd zodat het resultaat altijd niet-overlappende, gesorteerde
+ * vrije blokken zijn.
+ */
+export function computeFreeGaps(
+  windowStart: string,
+  windowEnd: string,
+  busy: TimeRange[]
+): TimeRange[] {
+  const clipped = busy
+    .map((b) => ({
+      start: b.start < windowStart ? windowStart : b.start,
+      end: b.end > windowEnd ? windowEnd : b.end,
+    }))
+    .filter((b) => b.start < b.end)
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  const merged: TimeRange[] = [];
+  for (const b of clipped) {
+    const last = merged[merged.length - 1];
+    if (last && b.start <= last.end) {
+      if (b.end > last.end) last.end = b.end;
+    } else {
+      merged.push({ ...b });
+    }
+  }
+
+  const gaps: TimeRange[] = [];
+  let cursor = windowStart;
+  for (const b of merged) {
+    if (b.start > cursor) gaps.push({ start: cursor, end: b.start });
+    if (b.end > cursor) cursor = b.end;
+  }
+  if (cursor < windowEnd) gaps.push({ start: cursor, end: windowEnd });
+
+  return gaps;
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   open: "Open",
   accepted: "Toegewezen",
