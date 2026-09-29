@@ -1,8 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { verifyTurnstile } from "@/lib/turnstile";
+import {
+  REMEMBER_COOKIE,
+  ACTIVE_SESSION_COOKIE,
+  REMEMBER_MAX_AGE,
+} from "@/lib/authCookies";
 
 export type AuthState = {
   error: string | null;
@@ -15,6 +21,7 @@ export async function login(
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const remember = formData.get("remember") === "on";
 
   if (!email || !password) {
     return { error: "Vul je e-mailadres en wachtwoord in." };
@@ -34,6 +41,28 @@ export async function login(
       };
     }
     return { error: "Ongeldig e-mailadres of wachtwoord." };
+  }
+
+  const cookieStore = await cookies();
+  const secure = process.env.NODE_ENV === "production";
+  cookieStore.set(REMEMBER_COOKIE, remember ? "1" : "0", {
+    maxAge: REMEMBER_MAX_AGE,
+    httpOnly: true,
+    secure,
+    sameSite: "lax",
+    path: "/",
+  });
+  if (remember) {
+    cookieStore.delete(ACTIVE_SESSION_COOKIE);
+  } else {
+    // Geen maxAge/expires: een echte sessiecookie die verdwijnt zodra de
+    // browser volledig afgesloten wordt (niet enkel het tabblad).
+    cookieStore.set(ACTIVE_SESSION_COOKIE, "1", {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+    });
   }
 
   redirect("/");
@@ -162,5 +191,10 @@ export async function updatePassword(
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+
+  const cookieStore = await cookies();
+  cookieStore.delete(REMEMBER_COOKIE);
+  cookieStore.delete(ACTIVE_SESSION_COOKIE);
+
   redirect("/login");
 }

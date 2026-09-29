@@ -49,6 +49,10 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </div>
+        <label className="mb-3 flex items-center gap-2 text-sm text-ink-soft">
+          <input type="checkbox" name="remember" defaultChecked />
+          Onthoud mij op dit toestel
+        </label>
         {state.error && (
           <p className="mb-2 text-sm text-danger">{state.error}</p>
         )}
