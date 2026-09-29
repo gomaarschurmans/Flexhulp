@@ -1,11 +1,19 @@
 "use client";
 
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
+import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { ClientTaskItem } from "@/app/klant/ClientTaskItem";
-import type { Task } from "@/lib/types/domain";
+import type { Task, TaskApplication } from "@/lib/types/domain";
 
-export function KlantTaskList({ initialTasks }: { initialTasks: Task[] }) {
+export function KlantTaskList({
+  initialTasks,
+  initialApplications,
+}: {
+  initialTasks: Task[];
+  initialApplications: TaskApplication[];
+}) {
   const tasks = useRealtimeTasks(initialTasks);
+  const applications = useRealtimeApplications(initialApplications);
   const sorted = [...tasks].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
   return (
@@ -18,7 +26,11 @@ export function KlantTaskList({ initialTasks }: { initialTasks: Task[] }) {
       ) : (
         <div className="flex flex-col gap-3.5">
           {sorted.map((task) => (
-            <ClientTaskItem key={task.id} task={task} />
+            <ClientTaskItem
+              key={task.id}
+              task={task}
+              applications={applications.filter((a) => a.task_id === task.id)}
+            />
           ))}
         </div>
       )}

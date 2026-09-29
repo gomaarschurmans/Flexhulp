@@ -9,14 +9,27 @@ const wrapper = (title: string, bodyHtml: string) => `
   <p style="font-size: 12px; color: #5B5F66; margin-top: 32px;">Klussen &amp; opdrachten voor studenten.</p>
 </div>`;
 
-export function taskAcceptedEmail(task: Task) {
+export function newApplicationClientEmail(task: Task, studentName: string) {
   return {
-    subject: `${task.student_name} heeft je opdracht geaccepteerd`,
+    subject: `${studentName} wil je taak uitvoeren`,
     html: wrapper(
-      "Je opdracht is geaccepteerd",
-      `<p>Goed nieuws! <strong>${task.student_name}</strong> heeft je opdracht '<strong>${task.title}</strong>' geaccepteerd.</p>
-       <p>Gepland op: <strong>${formatDateTime(task.date, task.time)}</strong><br/>
-       Locatie: ${task.location}</p>`
+      "Een student heeft interesse getoond",
+      `<p><strong>${studentName}</strong> wil je taak '<strong>${task.title}</strong>' op
+       <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> uitvoeren.</p>
+       <p>Log in op Flexhulp om te kiezen wie je de taak toewijst.</p>`
+    ),
+  };
+}
+
+export function studentChosenEmail(task: Task) {
+  return {
+    subject: `Je bent gekozen voor '${task.title}'`,
+    html: wrapper(
+      "Je bent gekozen!",
+      `<p>Goed nieuws! <strong>${task.client_name}</strong> heeft je gekozen voor
+       '<strong>${task.title}</strong>' op
+       <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong>.</p>
+       <p>Locatie: ${task.location}</p>`
     ),
   };
 }
@@ -99,7 +112,7 @@ export function welcomeEmail(name: string, role: "client" | "student") {
   const roleText =
     role === "client"
       ? "Je kan meteen een taak plaatsen."
-      : "Je kan meteen openstaande taken bekijken en accepteren.";
+      : "Je kan meteen openstaande taken bekijken en je aanmelden voor wat bij je past.";
   return {
     subject: "Welkom bij Flexhulp",
     html: wrapper(

@@ -75,6 +75,16 @@ export interface HourRequest {
   created_at: string;
 }
 
+export interface TaskApplication {
+  id: string;
+  task_id: string;
+  student_id: string;
+  student_name: string;
+  student_email: string;
+  student_phone: string | null;
+  created_at: string;
+}
+
 export interface PlatformSettings {
   id: number;
   hourly_rate: number;

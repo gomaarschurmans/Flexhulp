@@ -7,14 +7,18 @@ type Mode = "client-owned" | "student-open" | "student-mine";
 export function TaskCard({
   task,
   mode,
+  applied,
   onCancel,
   onAccept,
+  onWithdraw,
   onComplete,
 }: {
   task: Task;
   mode: Mode;
+  applied?: boolean;
   onCancel?: (formData: FormData) => void | Promise<void>;
   onAccept?: (formData: FormData) => void | Promise<void>;
+  onWithdraw?: (formData: FormData) => void | Promise<void>;
   onComplete?: (formData: FormData) => void | Promise<void>;
 }) {
   return (
@@ -75,12 +79,24 @@ export function TaskCard({
           </span>
         )}
 
-        {mode === "student-open" && onAccept && (
+        {mode === "student-open" && !applied && onAccept && (
           <form action={onAccept}>
             <button type="submit" className="btn btn-teal text-xs px-3.5 py-2">
-              Accepteren
+              Ik wil dit doen
             </button>
           </form>
+        )}
+        {mode === "student-open" && applied && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-ink-soft">Aangemeld — wacht op klant</span>
+            {onWithdraw && (
+              <form action={onWithdraw}>
+                <button type="submit" className="btn btn-ghost text-xs px-3.5 py-2">
+                  Intrekken
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         {mode === "student-mine" && task.status === "accepted" && onComplete && (

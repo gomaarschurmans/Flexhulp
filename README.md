@@ -144,6 +144,8 @@ in `supabase/`, in volgorde:
    binnen een vrijgegeven venster (i.p.v. het hele blok te moeten boeken)
 7. `migration_v5_payments.sql` — betaalstatus-velden + Mollie-koppeling
 8. `migration_v6_requests.sql` — losse aanvragen voor extra uren
+9. `migration_v7_task_applications.sql` — studenten melden interesse aan,
+   de klant kiest zelf wie de taak toegewezen krijgt
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

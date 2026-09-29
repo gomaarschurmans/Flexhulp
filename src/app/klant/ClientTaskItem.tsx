@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
+  acceptStudent,
   cancelTask,
   editTask,
   payTask,
@@ -12,12 +13,18 @@ import {
 import { CATEGORIES } from "@/lib/constants";
 import { formatTimeRange, formatEuro } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Task } from "@/lib/types/domain";
+import type { Task, TaskApplication } from "@/lib/types/domain";
 
 const editInitial: EditTaskState = { error: null };
 const reviewInitial: ReviewState = { error: null };
 
-export function ClientTaskItem({ task }: { task: Task }) {
+export function ClientTaskItem({
+  task,
+  applications,
+}: {
+  task: Task;
+  applications: TaskApplication[];
+}) {
   const [editing, setEditing] = useState(false);
   const [editState, editAction, editPending] = useActionState(
     editTask.bind(null, task.id),
@@ -157,6 +164,30 @@ export function ClientTaskItem({ task }: { task: Task }) {
               Intrekken
             </button>
           </form>
+        </div>
+      )}
+
+      {task.status === "open" && applications.length > 0 && (
+        <div className="mt-3 border-t border-line pt-3.5">
+          <p className="mb-2 text-sm font-medium">
+            {applications.length} student
+            {applications.length > 1 ? "en" : ""} toonde interesse
+          </p>
+          <div className="flex flex-col gap-2">
+            {applications.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between gap-2 rounded border border-line bg-[#FAF9F6] px-3 py-2 text-sm"
+              >
+                <span>{a.student_name}</span>
+                <form action={acceptStudent.bind(null, task.id, a.student_id)}>
+                  <button type="submit" className="btn btn-teal text-xs px-3 py-1.5">
+                    Accepteer
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

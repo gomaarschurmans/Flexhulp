@@ -4,12 +4,14 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { CATEGORIES } from "@/lib/constants";
 import { getResend, FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/resend/client";
 import {
   newBookingAdminEmail,
   taskCancelledAdminEmail,
   newRequestAdminEmail,
+  studentChosenEmail,
 } from "@/lib/resend/templates";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
@@ -168,6 +170,66 @@ export async function payTask(id: string) {
   }
 
   redirect(checkoutUrl);
+}
+
+export async function acceptStudent(taskId: string, studentId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", taskId)
+    .eq("client_id", user.id)
+    .eq("status", "open")
+    .single<Task>();
+  if (!task) return;
+
+  const { data: application } = await supabase
+    .from("task_applications")
+    .select("*")
+    .eq("task_id", taskId)
+    .eq("student_id", studentId)
+    .single();
+  if (!application) return;
+
+  const admin = createAdminClient();
+  const { data: updated, error } = await admin
+    .from("tasks")
+    .update({
+      student_id: studentId,
+      student_name: application.student_name,
+      student_email: application.student_email,
+      status: "accepted",
+      accepted_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .select()
+    .single<Task>();
+
+  if (error || !updated) return;
+
+  try {
+    const { subject, html } = studentChosenEmail(updated);
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: application.student_email,
+      subject,
+      html,
+    });
+  } catch (e) {
+    console.error("Keuzemail versturen mislukt", e);
+  }
+  await sendSms(
+    application.student_phone,
+    `Flexhulp: je bent gekozen voor '${updated.title}' op ${formatTimeRange(updated.date, updated.time, updated.end_time)}.`
+  );
+
+  revalidatePath("/klant");
+  revalidatePath("/student");
 }
 
 const editTaskSchema = z.object({
