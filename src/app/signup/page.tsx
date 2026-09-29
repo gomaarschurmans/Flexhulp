@@ -6,12 +6,14 @@ import Link from "next/link";
 import { signup, type AuthState } from "@/app/auth/actions";
 import { Turnstile } from "@/components/Turnstile";
 import { PasswordInput } from "@/components/PasswordInput";
+import { PasswordStrength } from "@/components/PasswordStrength";
 
 const initialState: AuthState = { error: null };
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [role, setRole] = useState<"client" | "student">("client");
+  const [password, setPassword] = useState("");
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] flex-col justify-center px-6 py-10">
@@ -84,8 +86,10 @@ export default function SignupPage() {
             minLength={8}
             required
             autoComplete="new-password"
+            onChange={setPassword}
           />
         </div>
+        <PasswordStrength password={password} />
 
         <Turnstile />
 

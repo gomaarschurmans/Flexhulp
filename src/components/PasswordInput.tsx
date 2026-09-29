@@ -8,12 +8,14 @@ export function PasswordInput({
   minLength,
   required,
   autoComplete,
+  onChange,
 }: {
   id: string;
   name: string;
   minLength?: number;
   required?: boolean;
   autoComplete?: string;
+  onChange?: (value: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -26,6 +28,7 @@ export function PasswordInput({
         minLength={minLength}
         required={required}
         autoComplete={autoComplete}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className="!pr-11"
       />
       <button
