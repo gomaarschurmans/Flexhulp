@@ -120,7 +120,10 @@ export async function requestPasswordReset(
   }
 
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm`,
+  });
 
   // Altijd hetzelfde antwoord, zodat niemand kan nagaan welke adressen een account hebben.
   return { error: null, sent: true };
