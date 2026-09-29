@@ -6,12 +6,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES } from "@/lib/constants";
 import { getResend, FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/resend/client";
-import { newBookingAdminEmail, taskCancelledAdminEmail } from "@/lib/resend/templates";
+import {
+  newBookingAdminEmail,
+  taskCancelledAdminEmail,
+  newRequestAdminEmail,
+} from "@/lib/resend/templates";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { formatTimeRange } from "@/lib/utils";
-import type { Task } from "@/lib/types/domain";
+import type { HourRequest, Task } from "@/lib/types/domain";
 
 const bookTimeRangeSchema = z
   .object({
@@ -247,4 +251,105 @@ export async function submitReview(
 
   revalidatePath("/klant");
   return { error: null };
+}
+
+const submitRequestSchema = z.object({
+  category: z.enum(CATEGORIES),
+  estimated_hours: z.coerce
+    .number({ invalid_type_error: "Geef een geschat aantal uren op." })
+    .positive("Geef een geschat aantal uren op."),
+  preferred_period: z
+    .string()
+    .trim()
+    .min(1, "Geef aan wanneer je dit ongeveer nodig hebt."),
+  description: z.string().trim().default(""),
+});
+
+export type RequestState = { error: string | null; success: boolean };
+
+export async function submitRequest(
+  _prevState: RequestState,
+  formData: FormData
+): Promise<RequestState> {
+  const parsed = submitRequestSchema.safeParse({
+    category: formData.get("category"),
+    estimated_hours: formData.get("estimated_hours"),
+    preferred_period: formData.get("preferred_period"),
+    description: formData.get("description"),
+  });
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Ongeldige invoer.",
+      success: false,
+    };
+  }
+
+  const turnstileOk = await verifyTurnstile(formData.get("cf-turnstile-response"));
+  if (!turnstileOk) {
+    return { error: "Verificatie mislukt. Probeer opnieuw.", success: false };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Je bent niet ingelogd.", success: false };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name, email, phone")
+    .eq("id", user.id)
+    .single();
+  if (!profile) {
+    return { error: "Profiel niet gevonden.", success: false };
+  }
+
+  const { data: request, error } = await supabase
+    .from("requests")
+    .insert({
+      client_id: user.id,
+      client_name: profile.name,
+      client_email: profile.email,
+      client_phone: profile.phone,
+      category: parsed.data.category,
+      estimated_hours: parsed.data.estimated_hours,
+      preferred_period: parsed.data.preferred_period,
+      description: parsed.data.description,
+    })
+    .select()
+    .single<HourRequest>();
+
+  if (error) {
+    return {
+      error: "Aanvraag versturen is mislukt. Probeer opnieuw.",
+      success: false,
+    };
+  }
+
+  try {
+    const { subject, html } = newRequestAdminEmail(request);
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_NOTIFICATION_EMAIL,
+      subject,
+      html,
+    });
+  } catch (e) {
+    console.error("Aanvraag-adminmelding versturen mislukt", e);
+  }
+  await sendSms(
+    ADMIN_NOTIFICATION_PHONE,
+    `Nieuwe aanvraag: ${request.category} (±${request.estimated_hours} u) — ${request.client_name}`
+  );
+
+  revalidatePath("/klant");
+  return { error: null, success: true };
+}
+
+export async function cancelRequest(id: string) {
+  const supabase = await createClient();
+  await supabase.from("requests").delete().eq("id", id).eq("status", "open");
+  revalidatePath("/klant");
 }

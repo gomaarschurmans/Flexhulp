@@ -124,3 +124,17 @@ export async function setClientBanned(id: string, banned: boolean) {
   await supabase.from("profiles").update({ banned }).eq("id", id);
   revalidatePath("/admin");
 }
+
+export async function markRequestHandled(id: string) {
+  const supabase = await createClient();
+  await supabase.from("requests").update({ status: "handled" }).eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/klant");
+}
+
+export async function deleteRequest(id: string) {
+  const supabase = await createClient();
+  await supabase.from("requests").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/klant");
+}

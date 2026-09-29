@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { CreateTaskForm } from "@/app/klant/CreateTaskForm";
 import { KlantTaskList } from "@/app/klant/KlantTaskList";
+import { RequestForm } from "@/app/klant/RequestForm";
+import { KlantRequestList } from "@/app/klant/KlantRequestList";
 import { sortAvailability } from "@/lib/utils";
 
 export default async function KlantPage({
@@ -16,25 +18,31 @@ export default async function KlantPage({
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
-  const [{ data: settings }, { data: tasks }, { data: slots }, { data: busyTasks }] =
-    await Promise.all([
-      supabase
-        .from("platform_settings")
-        .select("hourly_rate, cancellation_notice_hours")
-        .eq("id", 1)
-        .single(),
-      supabase
-        .from("tasks")
-        .select("*")
-        .eq("client_id", user!.id)
-        .order("created_at", { ascending: false }),
-      supabase.from("availability").select("*").gte("slot_date", todayISO),
-      supabase
-        .from("tasks")
-        .select("*")
-        .eq("status", "open")
-        .gte("date", todayISO),
-    ]);
+  const [
+    { data: settings },
+    { data: tasks },
+    { data: slots },
+    { data: busyTasks },
+    { data: requests },
+  ] = await Promise.all([
+    supabase
+      .from("platform_settings")
+      .select("hourly_rate, cancellation_notice_hours")
+      .eq("id", 1)
+      .single(),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("client_id", user!.id)
+      .order("created_at", { ascending: false }),
+    supabase.from("availability").select("*").gte("slot_date", todayISO),
+    supabase.from("tasks").select("*").eq("status", "open").gte("date", todayISO),
+    supabase
+      .from("requests")
+      .select("*")
+      .eq("client_id", user!.id)
+      .order("created_at", { ascending: false }),
+  ]);
 
   return (
     <div>
@@ -50,11 +58,17 @@ export default async function KlantPage({
         </div>
       )}
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[380px_1fr]">
-        <CreateTaskForm
-          rate={settings?.hourly_rate ?? 0}
-          initialSlots={sortAvailability(slots ?? [])}
-          initialBusyTasks={busyTasks ?? []}
-        />
+        <div>
+          <CreateTaskForm
+            rate={settings?.hourly_rate ?? 0}
+            initialSlots={sortAvailability(slots ?? [])}
+            initialBusyTasks={busyTasks ?? []}
+          />
+          <div className="mt-4">
+            <RequestForm />
+          </div>
+          <KlantRequestList initialRequests={requests ?? []} />
+        </div>
         <KlantTaskList initialTasks={tasks ?? []} />
       </div>
     </div>

@@ -59,6 +59,22 @@ export interface AvailabilitySlot {
   created_at: string;
 }
 
+export type RequestStatus = "open" | "handled";
+
+export interface HourRequest {
+  id: string;
+  client_id: string | null;
+  client_name: string;
+  client_email: string;
+  client_phone: string | null;
+  category: string;
+  estimated_hours: number;
+  preferred_period: string;
+  description: string;
+  status: RequestStatus;
+  created_at: string;
+}
+
 export interface PlatformSettings {
   id: number;
   hourly_rate: number;

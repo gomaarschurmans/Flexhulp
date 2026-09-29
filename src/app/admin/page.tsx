@@ -9,21 +9,28 @@ import { AdminAvailabilityList } from "@/app/admin/AdminAvailabilityList";
 import { AdminCalendar } from "@/app/admin/AdminCalendar";
 import { AdminRevenueReport } from "@/app/admin/AdminRevenueReport";
 import { AdminClientsPanel } from "@/app/admin/AdminClientsPanel";
+import { AdminRequestsPanel } from "@/app/admin/AdminRequestsPanel";
 
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  const [{ data: settings }, { data: availability }, { data: tasks }, { data: clients }] =
-    await Promise.all([
-      supabase
-        .from("platform_settings")
-        .select("hourly_rate, cancellation_notice_hours")
-        .eq("id", 1)
-        .single(),
-      supabase.from("availability").select("*"),
-      supabase.from("tasks").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("*").eq("role", "client").order("name"),
-    ]);
+  const [
+    { data: settings },
+    { data: availability },
+    { data: tasks },
+    { data: clients },
+    { data: requests },
+  ] = await Promise.all([
+    supabase
+      .from("platform_settings")
+      .select("hourly_rate, cancellation_notice_hours")
+      .eq("id", 1)
+      .single(),
+    supabase.from("availability").select("*"),
+    supabase.from("tasks").select("*").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("*").eq("role", "client").order("name"),
+    supabase.from("requests").select("*").order("created_at", { ascending: false }),
+  ]);
 
   return (
     <div>
@@ -75,6 +82,11 @@ export default async function AdminPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      <div className="mb-8 card">
+        <h2 className="mb-4">Aanvragen voor extra uren</h2>
+        <AdminRequestsPanel initialRequests={requests ?? []} />
       </div>
 
       <div className="mb-8 card">

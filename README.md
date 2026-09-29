@@ -143,6 +143,7 @@ in `supabase/`, in volgorde:
 6. `migration_v4_flexible_hours.sql` — klant kiest zelf een sub-tijdstip
    binnen een vrijgegeven venster (i.p.v. het hele blok te moeten boeken)
 7. `migration_v5_payments.sql` — betaalstatus-velden + Mollie-koppeling
+8. `migration_v6_requests.sql` — losse aanvragen voor extra uren
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

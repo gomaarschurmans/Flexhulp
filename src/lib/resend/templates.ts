@@ -1,5 +1,5 @@
 import { formatDateTime, formatEuro, formatTimeRange } from "@/lib/utils";
-import type { Task } from "@/lib/types/domain";
+import type { HourRequest, Task } from "@/lib/types/domain";
 
 const wrapper = (title: string, bodyHtml: string) => `
 <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F5F3EE; color: #16181D;">
@@ -74,6 +74,23 @@ export function paymentRequestEmail(task: Task, checkoutUrl: string) {
            Betaal nu
          </a>
        </p>`
+    ),
+  };
+}
+
+export function newRequestAdminEmail(request: HourRequest) {
+  return {
+    subject: `Nieuwe aanvraag: ${request.category} — ±${request.estimated_hours} u`,
+    html: wrapper(
+      "Nieuwe aanvraag voor extra uren",
+      `<p><strong>${request.client_name}</strong> (${request.client_email}
+       ${request.client_phone ? `· ${request.client_phone}` : ""}) heeft een aanvraag ingediend.</p>
+       <p>Categorie: <strong>${request.category}</strong><br/>
+       Geschatte uren: <strong>±${request.estimated_hours} u</strong><br/>
+       Gewenste periode: <strong>${request.preferred_period}</strong></p>
+       ${request.description ? `<p>Toelichting: ${request.description}</p>` : ""}
+       <p>Dit is enkel een aanvraag — er is nog niets geboekt. Geef zelf een
+       tijdvenster vrij als je hierop wil ingaan.</p>`
     ),
   };
 }
