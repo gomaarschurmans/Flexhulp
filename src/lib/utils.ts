@@ -91,6 +91,21 @@ export function computeFreeGaps(
   return gaps;
 }
 
+/**
+ * Rondt een "HH:MM"-tijdstip af naar het dichtstbijzijnde half uur —
+ * klanten kunnen hun tijdslot enkel in stappen van 30 minuten aanpassen.
+ */
+export function roundToHalfHour(value: string): string {
+  if (!value) return value;
+  const [hStr, mStr] = value.split(":");
+  let h = Number(hStr);
+  const m = Number(mStr);
+  const roundedM = m < 15 ? 0 : m < 45 ? 30 : 60;
+  if (roundedM === 60) h = (h + 1) % 24;
+  const finalM = roundedM === 60 ? 0 : roundedM;
+  return `${String(h).padStart(2, "0")}:${String(finalM).padStart(2, "0")}`;
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   open: "Open",
   accepted: "Toegewezen",

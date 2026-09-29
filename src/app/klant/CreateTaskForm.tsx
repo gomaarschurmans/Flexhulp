@@ -8,6 +8,7 @@ import {
   formatDateTime,
   slotHours,
   computeFreeGaps,
+  roundToHalfHour,
   type TimeRange,
 } from "@/lib/utils";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
@@ -188,10 +189,11 @@ export function CreateTaskForm({
                     id="start_time"
                     name="start_time"
                     type="time"
+                    step={1800}
                     value={startTime}
                     min={selectedGap.start.slice(0, 5)}
                     max={selectedGap.end.slice(0, 5)}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    onChange={(e) => setStartTime(roundToHalfHour(e.target.value))}
                     required
                   />
                 </div>
@@ -201,13 +203,17 @@ export function CreateTaskForm({
                     id="end_time"
                     name="end_time"
                     type="time"
+                    step={1800}
                     value={endTime}
                     min={selectedGap.start.slice(0, 5)}
                     max={selectedGap.end.slice(0, 5)}
-                    onChange={(e) => setEndTime(e.target.value)}
+                    onChange={(e) => setEndTime(roundToHalfHour(e.target.value))}
                     required
                   />
                 </div>
+                <p className="col-span-2 -mt-1 text-xs text-ink-soft">
+                  Enkel per half uur instelbaar.
+                </p>
               </div>
             </div>
           )}

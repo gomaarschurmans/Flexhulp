@@ -63,6 +63,10 @@ create table public.tasks (
   end_time time not null,
   location text not null,
   hours numeric(5,2) not null check (hours > 0),
+  constraint tasks_half_hour_times check (
+    extract(minute from time) in (0, 30)
+    and extract(minute from end_time) in (0, 30)
+  ),
   rate_at_creation numeric(10,2) not null,
   client_id uuid references public.profiles(id) on delete set null,
   client_name text not null,

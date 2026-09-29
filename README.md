@@ -148,6 +148,8 @@ in `supabase/`, in volgorde:
    de klant kiest zelf wie de taak toegewezen krijgt
 10. `migration_v8_invoicing.sql` — facturatie (vrijstellingsregeling kleine
     ondernemingen), plus adresveld op profiles
+11. `migration_v9_half_hour_slots.sql` — tijdslot enkel per half uur
+    instelbaar (databank-brede check-constraint)
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

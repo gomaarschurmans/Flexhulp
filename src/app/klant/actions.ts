@@ -19,11 +19,13 @@ import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { formatTimeRange } from "@/lib/utils";
 import type { HourRequest, Task } from "@/lib/types/domain";
 
+const HALF_HOUR = /^\d{2}:(00|30)$/;
+
 const bookTimeRangeSchema = z
   .object({
     window_id: z.string().uuid("Kies een dag."),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, "Kies een starttijd."),
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, "Kies een eindtijd."),
+    start_time: z.string().regex(HALF_HOUR, "Kies een starttijd op het half uur."),
+    end_time: z.string().regex(HALF_HOUR, "Kies een eindtijd op het half uur."),
     category: z.enum(CATEGORIES),
     description: z.string().trim().min(1, "Geef een beschrijving van de klus."),
     location: z.string().trim().min(1, "Geef een locatie op."),
