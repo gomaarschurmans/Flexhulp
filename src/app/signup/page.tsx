@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signup, type AuthState } from "@/app/auth/actions";
@@ -14,6 +14,11 @@ export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [role, setRole] = useState<"client" | "student">("client");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("role") === "student") setRole("student");
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] flex-col justify-center px-6 py-10">
