@@ -73,6 +73,13 @@ export function CreateTaskForm({
     : [];
   const selectedGap = gaps[gapIndex] ?? gaps[0];
 
+  // Vrije en bezette blokken samen, chronologisch — zo ziet de klant in
+  // één oogopslag de volledige dag, i.p.v. enkel de vrije stukken.
+  const timeline = [
+    ...gaps.map((g) => ({ ...g, free: true as const })),
+    ...busyRangesForWindow.map((b) => ({ ...b, free: false as const })),
+  ].sort((a, b) => a.start.localeCompare(b.start));
+
   useEffect(() => {
     if (selectedGap) {
       setStartTime(selectedGap.start.slice(0, 5));
@@ -127,18 +134,32 @@ export function CreateTaskForm({
             </select>
           </div>
 
-          {busyRangesForWindow.length > 0 && (
-            <p className="mb-3 text-xs text-ink-soft">
-              Al geboekt op deze dag:{" "}
-              {busyRangesForWindow
-                .map((b) => `${b.start.slice(0, 5)}–${b.end.slice(0, 5)}`)
-                .join(", ")}
-            </p>
+          {timeline.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-1.5 text-xs font-semibold text-ink-soft">
+                Mogelijke uren om te boeken op deze dag
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {timeline.map((seg) => (
+                  <span
+                    key={`${seg.start}-${seg.end}`}
+                    className={
+                      seg.free
+                        ? "rounded-full bg-teal-soft px-2.5 py-1 text-xs font-medium text-teal"
+                        : "rounded-full bg-[#EFEDE8] px-2.5 py-1 text-xs text-ink-soft line-through"
+                    }
+                  >
+                    {seg.start.slice(0, 5)}–{seg.end.slice(0, 5)}
+                    {!seg.free && " (bezet)"}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
 
           {gaps.length > 1 && (
             <div className="field mb-4">
-              <label htmlFor="gap_index">Beschikbaar tijdstip</label>
+              <label htmlFor="gap_index">Kies het blok waarin je wil boeken</label>
               <select
                 id="gap_index"
                 value={gapIndex}
@@ -155,32 +176,38 @@ export function CreateTaskForm({
           )}
 
           {selectedGap && (
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <div className="field">
-                <label htmlFor="start_time">Van</label>
-                <input
-                  id="start_time"
-                  name="start_time"
-                  type="time"
-                  value={startTime}
-                  min={selectedGap.start.slice(0, 5)}
-                  max={selectedGap.end.slice(0, 5)}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="end_time">Tot</label>
-                <input
-                  id="end_time"
-                  name="end_time"
-                  type="time"
-                  value={endTime}
-                  min={selectedGap.start.slice(0, 5)}
-                  max={selectedGap.end.slice(0, 5)}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  required
-                />
+            <div className="mb-4 rounded border border-line bg-navy-tint p-3.5">
+              <p className="mb-2.5 text-xs font-semibold text-navy">
+                Welke uren heb je nodig? (tussen {selectedGap.start.slice(0, 5)}–
+                {selectedGap.end.slice(0, 5)})
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="field mb-0">
+                  <label htmlFor="start_time">Van</label>
+                  <input
+                    id="start_time"
+                    name="start_time"
+                    type="time"
+                    value={startTime}
+                    min={selectedGap.start.slice(0, 5)}
+                    max={selectedGap.end.slice(0, 5)}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="field mb-0">
+                  <label htmlFor="end_time">Tot</label>
+                  <input
+                    id="end_time"
+                    name="end_time"
+                    type="time"
+                    value={endTime}
+                    min={selectedGap.start.slice(0, 5)}
+                    max={selectedGap.end.slice(0, 5)}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             </div>
           )}
