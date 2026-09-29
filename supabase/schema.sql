@@ -9,6 +9,7 @@ create table public.profiles (
   email text not null,
   name text not null,
   phone text,
+  address text,
   role text not null default 'client' check (role in ('client','student','admin')),
   banned boolean not null default false,
   created_at timestamptz not null default now()
@@ -127,7 +128,7 @@ create trigger on_auth_user_created
 -- Admin toekennen kan alleen via de Dashboard Table Editor (draait als postgres,
 -- omzeilt deze grants en RLS).
 revoke update on public.profiles from authenticated;
-grant update (name, phone) on public.profiles to authenticated;
+grant update (name, phone, address) on public.profiles to authenticated;
 
 -- =========================================================
 -- Trigger: bewaakt geldige status-overgangen van een taak
@@ -486,4 +487,39 @@ create policy "applications_delete_own_student" on public.task_applications for 
   to authenticated using (student_id = auth.uid());
 
 create policy "applications_delete_admin" on public.task_applications for delete
+  to authenticated using (public.get_my_role() = 'admin');
+
+-- =========================================================
+-- invoices — aangemaakt zodra een taak als voltooid gemarkeerd wordt
+-- (markTaskDone(), via de service-role client). Vrijstellingsregeling
+-- kleine ondernemingen: geen BTW. Enkel leesbaar via RLS, geschreven
+-- via de backend — een uitgegeven factuur blijft onveranderlijk.
+-- =========================================================
+create sequence if not exists public.invoice_number_seq start 1;
+
+create table public.invoices (
+  id uuid primary key default gen_random_uuid(),
+  invoice_number integer not null unique default nextval('invoice_number_seq'),
+  task_id uuid not null unique references public.tasks(id) on delete restrict,
+  client_id uuid references public.profiles(id) on delete set null,
+  client_name text not null,
+  client_email text not null,
+  client_address text not null default '',
+  category text not null,
+  description text not null default '',
+  service_date date not null,
+  service_time time not null,
+  service_end_time time not null,
+  hours numeric(5,2) not null,
+  rate numeric(10,2) not null,
+  total numeric(10,2) not null,
+  vat_exempt boolean not null default true,
+  issued_at timestamptz not null default now()
+);
+alter table public.invoices enable row level security;
+
+create policy "invoices_select_own_client" on public.invoices for select
+  to authenticated using (client_id = auth.uid());
+
+create policy "invoices_select_admin" on public.invoices for select
   to authenticated using (public.get_my_role() = 'admin');

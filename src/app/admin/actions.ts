@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
+import { SITE_URL } from "@/lib/mollie/client";
+import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
 import { paymentRequestEmail } from "@/lib/resend/templates";
 import type { Task } from "@/lib/types/domain";
@@ -94,10 +96,13 @@ export async function markTaskDone(id: string) {
     .update({ status: "done", completed_at: new Date().toISOString() })
     .eq("id", id);
 
+  const invoice = await createInvoiceForTask(task);
+
   try {
     const checkoutUrl = await getOrCreateTaskPayment(task);
     if (checkoutUrl) {
-      const { subject, html } = paymentRequestEmail(task, checkoutUrl);
+      const invoiceUrl = invoice ? `${SITE_URL}/klant/facturen/${invoice.id}` : null;
+      const { subject, html } = paymentRequestEmail(task, checkoutUrl, invoice, invoiceUrl);
       await getResend().emails.send({
         from: FROM_EMAIL,
         to: task.client_email,

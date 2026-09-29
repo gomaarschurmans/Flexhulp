@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
-import type { PaymentStatus, Task } from "@/lib/types/domain";
+import { formatInvoiceNumber } from "@/lib/invoicing/business";
+import type { InvoiceSummary, PaymentStatus, Task } from "@/lib/types/domain";
 
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   unpaid: "–",
@@ -25,7 +27,13 @@ const PAYMENT_STYLES: Record<PaymentStatus, string> = {
   canceled: "text-ink-soft",
 };
 
-export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
+export function AdminTasksPanel({
+  initialTasks,
+  invoices,
+}: {
+  initialTasks: Task[];
+  invoices: InvoiceSummary[];
+}) {
   const tasks = useRealtimeTasks(initialTasks);
 
   const stats = useMemo(() => {
@@ -88,7 +96,7 @@ export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
                     {PAYMENT_LABELS[t.payment_status]}
                   </td>
                   <td className="border-b border-line px-3.5 py-2.5">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {t.status === "open" && (
                         <form action={markTaskDone.bind(null, t.id)}>
                           <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
@@ -96,6 +104,17 @@ export function AdminTasksPanel({ initialTasks }: { initialTasks: Task[] }) {
                           </button>
                         </form>
                       )}
+                      {(() => {
+                        const invoice = invoices.find((i) => i.task_id === t.id);
+                        return invoice ? (
+                          <Link
+                            href={`/admin/facturen/${invoice.id}`}
+                            className="btn btn-ghost px-3.5 py-2 text-xs"
+                          >
+                            {formatInvoiceNumber(invoice.invoice_number)}
+                          </Link>
+                        ) : null;
+                      })()}
                       <form action={adminDeleteTask.bind(null, t.id)}>
                         <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
                           Verwijder

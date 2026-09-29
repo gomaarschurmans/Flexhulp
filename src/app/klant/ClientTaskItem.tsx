@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   acceptStudent,
   cancelTask,
@@ -12,8 +13,9 @@ import {
 } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
 import { formatTimeRange, formatEuro } from "@/lib/utils";
+import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Task, TaskApplication } from "@/lib/types/domain";
+import type { InvoiceSummary, Task, TaskApplication } from "@/lib/types/domain";
 
 const editInitial: EditTaskState = { error: null };
 const reviewInitial: ReviewState = { error: null };
@@ -21,9 +23,11 @@ const reviewInitial: ReviewState = { error: null };
 export function ClientTaskItem({
   task,
   applications,
+  invoice,
 }: {
   task: Task;
   applications: TaskApplication[];
+  invoice: InvoiceSummary | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [editState, editAction, editPending] = useActionState(
@@ -198,7 +202,7 @@ export function ClientTaskItem({
       )}
 
       {task.status === "done" && (
-        <div className="mt-2 border-t border-line pt-3.5">
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-3.5">
           {task.payment_status === "paid" ? (
             <span className="rounded-full bg-teal-soft px-2.5 py-1 text-xs font-semibold text-teal">
               Betaald
@@ -209,6 +213,14 @@ export function ClientTaskItem({
                 Betaal nu ({formatEuro(task.hours * task.rate_at_creation)})
               </button>
             </form>
+          )}
+          {invoice && (
+            <Link
+              href={`/klant/facturen/${invoice.id}`}
+              className="btn btn-ghost text-xs px-3.5 py-2"
+            >
+              Factuur {formatInvoiceNumber(invoice.invoice_number)}
+            </Link>
           )}
         </div>
       )}

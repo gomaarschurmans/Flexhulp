@@ -15,6 +15,7 @@ export interface Profile {
   email: string;
   name: string;
   phone: string | null;
+  address: string | null;
   role: Role;
   banned: boolean;
   created_at: string;
@@ -83,6 +84,32 @@ export interface TaskApplication {
   student_email: string;
   student_phone: string | null;
   created_at: string;
+}
+
+export interface InvoiceSummary {
+  id: string;
+  task_id: string;
+  invoice_number: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: number;
+  task_id: string;
+  client_id: string | null;
+  client_name: string;
+  client_email: string;
+  client_address: string;
+  category: string;
+  description: string;
+  service_date: string;
+  service_time: string;
+  service_end_time: string;
+  hours: number;
+  rate: number;
+  total: number;
+  vat_exempt: boolean;
+  issued_at: string;
 }
 
 export interface PlatformSettings {

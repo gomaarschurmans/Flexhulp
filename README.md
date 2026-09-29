@@ -146,6 +146,8 @@ in `supabase/`, in volgorde:
 8. `migration_v6_requests.sql` — losse aanvragen voor extra uren
 9. `migration_v7_task_applications.sql` — studenten melden interesse aan,
    de klant kiest zelf wie de taak toegewezen krijgt
+10. `migration_v8_invoicing.sql` — facturatie (vrijstellingsregeling kleine
+    ondernemingen), plus adresveld op profiles
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

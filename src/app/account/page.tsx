@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/Navbar";
 import { DeleteAccountButton } from "@/app/account/DeleteAccountButton";
+import { ProfileForm } from "@/app/account/ProfileForm";
 import type { Role } from "@/lib/types/domain";
 
 export default async function AccountPage() {
@@ -13,7 +14,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, role")
+    .select("name, email, phone, address, role")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -26,14 +27,13 @@ export default async function AccountPage() {
 
         <div className="card mb-6">
           <h2 className="mb-4 text-lg">Gegevens</h2>
-          <dl className="grid grid-cols-[100px_1fr] gap-y-2 text-sm">
+          <dl className="mb-4 grid grid-cols-[100px_1fr] gap-y-2 text-sm">
             <dt className="text-ink-soft">Naam</dt>
             <dd>{profile.name}</dd>
             <dt className="text-ink-soft">E-mail</dt>
             <dd>{profile.email}</dd>
-            <dt className="text-ink-soft">Telefoon</dt>
-            <dd>{profile.phone || "—"}</dd>
           </dl>
+          <ProfileForm phone={profile.phone} address={profile.address} />
         </div>
 
         <div className="card border-danger/30">

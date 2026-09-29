@@ -1,5 +1,6 @@
 import { formatDateTime, formatEuro, formatTimeRange } from "@/lib/utils";
-import type { HourRequest, Task } from "@/lib/types/domain";
+import { formatInvoiceNumber } from "@/lib/invoicing/business";
+import type { HourRequest, Invoice, Task } from "@/lib/types/domain";
 
 const wrapper = (title: string, bodyHtml: string) => `
 <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F5F3EE; color: #16181D;">
@@ -73,7 +74,12 @@ export function taskCancelledAdminEmail(task: Task) {
   };
 }
 
-export function paymentRequestEmail(task: Task, checkoutUrl: string) {
+export function paymentRequestEmail(
+  task: Task,
+  checkoutUrl: string,
+  invoice: Invoice | null,
+  invoiceUrl: string | null
+) {
   const amount = formatEuro(task.hours * task.rate_at_creation);
   return {
     subject: `Betaalverzoek: ${task.category} — ${amount}`,
@@ -82,10 +88,18 @@ export function paymentRequestEmail(task: Task, checkoutUrl: string) {
       `<p>Bedankt! <strong>${task.category}</strong> op
        <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> is uitgevoerd.</p>
        <p>Te betalen: <strong>${amount}</strong> (${task.hours} u × ${formatEuro(task.rate_at_creation)})</p>
+       ${invoice ? `<p>Factuur: <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong></p>` : ""}
        <p style="margin-top: 20px;">
          <a href="${checkoutUrl}" style="display: inline-block; background: #16181D; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
            Betaal nu
          </a>
+         ${
+           invoiceUrl
+             ? `<a href="${invoiceUrl}" style="display: inline-block; margin-left: 10px; color: #16181D; padding: 12px 0; text-decoration: underline; font-weight: 600;">
+                 Bekijk factuur
+               </a>`
+             : ""
+         }
        </p>`
     ),
   };

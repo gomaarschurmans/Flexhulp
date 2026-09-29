@@ -3,14 +3,16 @@
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { ClientTaskItem } from "@/app/klant/ClientTaskItem";
-import type { Task, TaskApplication } from "@/lib/types/domain";
+import type { InvoiceSummary, Task, TaskApplication } from "@/lib/types/domain";
 
 export function KlantTaskList({
   initialTasks,
   initialApplications,
+  invoices,
 }: {
   initialTasks: Task[];
   initialApplications: TaskApplication[];
+  invoices: InvoiceSummary[];
 }) {
   const tasks = useRealtimeTasks(initialTasks);
   const applications = useRealtimeApplications(initialApplications);
@@ -30,6 +32,7 @@ export function KlantTaskList({
               key={task.id}
               task={task}
               applications={applications.filter((a) => a.task_id === task.id)}
+              invoice={invoices.find((i) => i.task_id === task.id) ?? null}
             />
           ))}
         </div>

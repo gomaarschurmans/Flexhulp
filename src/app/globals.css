@@ -50,3 +50,9 @@
     @apply rounded border border-line bg-card p-6;
   }
 }
+
+@media print {
+  header {
+    display: none;
+  }
+}

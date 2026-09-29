@@ -25,6 +25,7 @@ export default async function KlantPage({
     { data: busyTasks },
     { data: requests },
     { data: applications },
+    { data: invoices },
   ] = await Promise.all([
     supabase
       .from("platform_settings")
@@ -44,6 +45,7 @@ export default async function KlantPage({
       .eq("client_id", user!.id)
       .order("created_at", { ascending: false }),
     supabase.from("task_applications").select("*"),
+    supabase.from("invoices").select("id, task_id, invoice_number"),
   ]);
 
   return (
@@ -74,6 +76,7 @@ export default async function KlantPage({
         <KlantTaskList
           initialTasks={tasks ?? []}
           initialApplications={applications ?? []}
+          invoices={invoices ?? []}
         />
       </div>
     </div>

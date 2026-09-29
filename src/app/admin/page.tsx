@@ -20,6 +20,7 @@ export default async function AdminPage() {
     { data: tasks },
     { data: clients },
     { data: requests },
+    { data: invoices },
   ] = await Promise.all([
     supabase
       .from("platform_settings")
@@ -30,6 +31,7 @@ export default async function AdminPage() {
     supabase.from("tasks").select("*").order("created_at", { ascending: false }),
     supabase.from("profiles").select("*").eq("role", "client").order("name"),
     supabase.from("requests").select("*").order("created_at", { ascending: false }),
+    supabase.from("invoices").select("id, task_id, invoice_number"),
   ]);
 
   return (
@@ -141,7 +143,7 @@ export default async function AdminPage() {
         <AdminClientsPanel clients={clients ?? []} />
       </div>
 
-      <AdminTasksPanel initialTasks={tasks ?? []} />
+      <AdminTasksPanel initialTasks={tasks ?? []} invoices={invoices ?? []} />
     </div>
   );
 }
