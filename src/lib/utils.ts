@@ -91,19 +91,27 @@ export function computeFreeGaps(
   return gaps;
 }
 
+export function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.slice(0, 5).split(":").map(Number);
+  const total = ((h * 60 + m + minutes) % 1440 + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 /**
- * Rondt een "HH:MM"-tijdstip af naar het dichtstbijzijnde half uur —
- * klanten kunnen hun tijdslot enkel in stappen van 30 minuten aanpassen.
+ * Alle "HH:MM"-tijdstippen op het hele/halve uur tussen start en end
+ * (beide inclusief) — gebruikt om de Van/Tot-keuzelijsten te vullen zodat
+ * er nooit iets anders dan een half uur gekozen kan worden (een native
+ * time-input met step laat je nog steeds vrij typen, een <select> niet).
  */
-export function roundToHalfHour(value: string): string {
-  if (!value) return value;
-  const [hStr, mStr] = value.split(":");
-  let h = Number(hStr);
-  const m = Number(mStr);
-  const roundedM = m < 15 ? 0 : m < 45 ? 30 : 60;
-  if (roundedM === 60) h = (h + 1) % 24;
-  const finalM = roundedM === 60 ? 0 : roundedM;
-  return `${String(h).padStart(2, "0")}:${String(finalM).padStart(2, "0")}`;
+export function halfHourMarks(start: string, end: string): string[] {
+  const marks: string[] = [];
+  let cursor = start.slice(0, 5);
+  const endStr = end.slice(0, 5);
+  while (cursor <= endStr) {
+    marks.push(cursor);
+    cursor = addMinutes(cursor, 30);
+  }
+  return marks;
 }
 
 export const STATUS_LABELS: Record<string, string> = {

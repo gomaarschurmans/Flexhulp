@@ -8,7 +8,8 @@ import {
   formatDateTime,
   slotHours,
   computeFreeGaps,
-  roundToHalfHour,
+  halfHourMarks,
+  addMinutes,
   type TimeRange,
 } from "@/lib/utils";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
@@ -89,9 +90,26 @@ export function CreateTaskForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGap?.start, selectedGap?.end]);
 
+  // Enkel opties op het hele/halve uur — een <select> laat, anders dan een
+  // native time-input met step, niets anders toe om te kiezen of te typen.
+  const startOptions = selectedGap
+    ? halfHourMarks(selectedGap.start.slice(0, 5), addMinutes(selectedGap.end.slice(0, 5), -30))
+    : [];
+  const endOptions =
+    selectedGap && startTime
+      ? halfHourMarks(addMinutes(startTime, 30), selectedGap.end.slice(0, 5))
+      : [];
+
   function handleWindowChange(id: string) {
     setWindowId(id);
     setGapIndex(0);
+  }
+
+  function handleStartTimeChange(value: string) {
+    setStartTime(value);
+    if (endTime <= value) {
+      setEndTime(addMinutes(value, 30));
+    }
   }
 
   const hours =
@@ -185,35 +203,34 @@ export function CreateTaskForm({
               <div className="grid grid-cols-2 gap-3">
                 <div className="field mb-0">
                   <label htmlFor="start_time">Van</label>
-                  <input
+                  <select
                     id="start_time"
                     name="start_time"
-                    type="time"
-                    step={1800}
                     value={startTime}
-                    min={selectedGap.start.slice(0, 5)}
-                    max={selectedGap.end.slice(0, 5)}
-                    onChange={(e) => setStartTime(roundToHalfHour(e.target.value))}
-                    required
-                  />
+                    onChange={(e) => handleStartTimeChange(e.target.value)}
+                  >
+                    {startOptions.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="field mb-0">
                   <label htmlFor="end_time">Tot</label>
-                  <input
+                  <select
                     id="end_time"
                     name="end_time"
-                    type="time"
-                    step={1800}
                     value={endTime}
-                    min={selectedGap.start.slice(0, 5)}
-                    max={selectedGap.end.slice(0, 5)}
-                    onChange={(e) => setEndTime(roundToHalfHour(e.target.value))}
-                    required
-                  />
+                    onChange={(e) => setEndTime(e.target.value)}
+                  >
+                    {endOptions.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <p className="col-span-2 -mt-1 text-xs text-ink-soft">
-                  Enkel per half uur instelbaar.
-                </p>
               </div>
             </div>
           )}
