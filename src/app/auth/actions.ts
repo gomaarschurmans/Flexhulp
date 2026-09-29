@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { verifyTurnstile } from "@/lib/turnstile";
 
-export type AuthState = { error: string | null };
+export type AuthState = {
+  error: string | null;
+  unconfirmedEmail?: string;
+};
 
 export async function login(
   _prevState: AuthState,
@@ -23,10 +26,42 @@ export async function login(
     password,
   });
   if (error) {
+    if (error.code === "email_not_confirmed") {
+      return {
+        error:
+          "Je account is nog niet bevestigd. Check je mailbox voor de bevestigingslink.",
+        unconfirmedEmail: email,
+      };
+    }
     return { error: "Ongeldig e-mailadres of wachtwoord." };
   }
 
   redirect("/");
+}
+
+export type ResendState = { error: string | null; sent: boolean };
+
+export async function resendConfirmation(
+  _prevState: ResendState,
+  formData: FormData
+): Promise<ResendState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Vul je e-mailadres in.", sent: false };
+  }
+
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${siteUrl}/auth/confirm` },
+  });
+  if (error) {
+    return { error: "Opnieuw versturen is mislukt. Probeer later opnieuw.", sent: false };
+  }
+
+  return { error: null, sent: true };
 }
 
 export async function signup(

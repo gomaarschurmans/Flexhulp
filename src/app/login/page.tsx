@@ -3,12 +3,22 @@
 import { useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { login, type AuthState } from "@/app/auth/actions";
+import {
+  login,
+  resendConfirmation,
+  type AuthState,
+  type ResendState,
+} from "@/app/auth/actions";
 
 const initialState: AuthState = { error: null };
+const resendInitial: ResendState = { error: null, sent: false };
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendConfirmation,
+    resendInitial
+  );
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] flex-col justify-center px-6">
@@ -49,6 +59,25 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
+
+      {state.unconfirmedEmail && !resendState.sent && (
+        <form action={resendAction} className="mt-3 text-center">
+          <input type="hidden" name="email" value={state.unconfirmedEmail} />
+          <button
+            type="submit"
+            disabled={resendPending}
+            className="text-sm text-navy underline"
+          >
+            {resendPending ? "Bezig..." : "Stuur bevestigingsmail opnieuw"}
+          </button>
+        </form>
+      )}
+      {resendState.sent && (
+        <p className="mt-3 text-center text-sm text-teal">
+          Nieuwe bevestigingsmail verstuurd — check je mailbox.
+        </p>
+      )}
+
       <p className="mt-6 text-center text-sm text-ink-soft">
         Nog geen account?{" "}
         <Link href="/signup" className="font-semibold text-navy">
