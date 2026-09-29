@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { updatePassword, type AuthState } from "@/app/auth/actions";
+import { PasswordInput } from "@/components/PasswordInput";
 
 const initialState: AuthState = { error: null };
 
@@ -31,22 +32,22 @@ export default function ResetPasswordPage() {
         <h2 className="mb-5 text-xl">Nieuw wachtwoord instellen</h2>
         <div className="field mb-4">
           <label htmlFor="password">Nieuw wachtwoord</label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             minLength={8}
             required
+            autoComplete="new-password"
           />
         </div>
         <div className="field mb-2">
           <label htmlFor="confirm">Herhaal wachtwoord</label>
-          <input
+          <PasswordInput
             id="confirm"
             name="confirm"
-            type="password"
             minLength={8}
             required
+            autoComplete="new-password"
           />
         </div>
         {state.error && (

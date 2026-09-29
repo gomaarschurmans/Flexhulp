@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signup, type AuthState } from "@/app/auth/actions";
 import { Turnstile } from "@/components/Turnstile";
+import { PasswordInput } from "@/components/PasswordInput";
 
 const initialState: AuthState = { error: null };
 
@@ -52,11 +53,18 @@ export default function SignupPage() {
 
         <div className="field mb-4">
           <label htmlFor="name">Jouw naam</label>
-          <input id="name" name="name" type="text" placeholder="bv. Sien" required />
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="bv. Sien"
+            autoComplete="name"
+            required
+          />
         </div>
         <div className="field mb-4">
           <label htmlFor="email">E-mailadres</label>
-          <input id="email" name="email" type="email" required />
+          <input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <div className="field mb-4">
           <label htmlFor="phone">Telefoonnummer (optioneel)</label>
@@ -65,16 +73,17 @@ export default function SignupPage() {
             name="phone"
             type="tel"
             placeholder="bv. 0470 12 34 56"
+            autoComplete="tel"
           />
         </div>
         <div className="field mb-4">
           <label htmlFor="password">Wachtwoord</label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             minLength={8}
             required
+            autoComplete="new-password"
           />
         </div>
 

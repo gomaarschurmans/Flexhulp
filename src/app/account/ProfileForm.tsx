@@ -18,7 +18,13 @@ export function ProfileForm({
     <form action={formAction}>
       <div className="field mb-3">
         <label htmlFor="phone">Telefoon</label>
-        <input id="phone" name="phone" type="tel" defaultValue={phone ?? ""} />
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          defaultValue={phone ?? ""}
+        />
       </div>
       <div className="field mb-3">
         <label htmlFor="address">Adres</label>
@@ -27,6 +33,7 @@ export function ProfileForm({
           name="address"
           type="text"
           placeholder="Straat, huisnummer, postcode, gemeente"
+          autoComplete="street-address"
           defaultValue={address ?? ""}
         />
         <p className="mt-1 text-xs text-ink-soft">

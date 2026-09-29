@@ -9,6 +9,7 @@ import {
   type AuthState,
   type ResendState,
 } from "@/app/auth/actions";
+import { PasswordInput } from "@/components/PasswordInput";
 
 const initialState: AuthState = { error: null };
 const resendInitial: ResendState = { error: null, sent: false };
@@ -37,11 +38,16 @@ export default function LoginPage() {
         <h2 className="mb-5 text-xl">Inloggen</h2>
         <div className="field mb-4">
           <label htmlFor="email">E-mailadres</label>
-          <input id="email" name="email" type="email" required />
+          <input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <div className="field mb-2">
           <label htmlFor="password">Wachtwoord</label>
-          <input id="password" name="password" type="password" required />
+          <PasswordInput
+            id="password"
+            name="password"
+            required
+            autoComplete="current-password"
+          />
         </div>
         {state.error && (
           <p className="mb-2 text-sm text-danger">{state.error}</p>

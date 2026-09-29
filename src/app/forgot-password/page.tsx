@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
             </p>
             <div className="field mb-2">
               <label htmlFor="email">E-mailadres</label>
-              <input id="email" name="email" type="email" required />
+              <input id="email" name="email" type="email" autoComplete="email" required />
             </div>
             {state.error && (
               <p className="mb-2 text-sm text-danger">{state.error}</p>
