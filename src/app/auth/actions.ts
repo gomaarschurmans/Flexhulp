@@ -122,7 +122,7 @@ export async function signup(
 
   const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -132,6 +132,19 @@ export async function signup(
   });
   if (error) {
     return { error: error.message };
+  }
+
+  // Supabase geeft bij een reeds bestaand, bevestigd account geen fout
+  // terug maar een "nep" user-object met een lege identities-lijst (om te
+  // voorkomen dat je kan afleiden welke e-mailadressen al een account
+  // hebben). Zonder deze check belandt iemand die per ongeluk opnieuw
+  // registreert misleidend op "check je mailbox" zonder dat er iets
+  // verstuurd werd.
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    return {
+      error:
+        "Dit e-mailadres heeft al een account. Probeer in te loggen, of vraag een nieuw wachtwoord aan als je het vergeten bent.",
+    };
   }
 
   redirect("/signup/check-email");
