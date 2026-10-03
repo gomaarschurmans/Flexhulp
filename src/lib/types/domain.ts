@@ -30,6 +30,7 @@ export interface Task {
   time: string;
   end_time: string;
   location: string;
+  city: string;
   hours: number;
   rate_at_creation: number;
   client_id: string | null;
@@ -50,6 +51,27 @@ export interface Task {
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
+}
+
+// Publieke projecties van tasks zonder persoonsgegevens (zie migration_v10)
+export interface BusySlot {
+  id: string;
+  date: string;
+  time: string;
+  end_time: string;
+}
+
+export interface BoardTask {
+  id: string;
+  category: string;
+  description: string;
+  city: string;
+  date: string;
+  time: string;
+  end_time: string;
+  hours: number;
+  rate_at_creation: number;
+  created_at: string;
 }
 
 export interface AvailabilitySlot {

@@ -52,6 +52,7 @@ export async function deleteAccount() {
       description: "",
       extra_info: "",
       location: "",
+      city: "",
     })
     .eq("client_id", user.id);
 

@@ -150,6 +150,9 @@ in `supabase/`, in volgorde:
     ondernemingen), plus adresveld op profiles
 11. `migration_v9_half_hour_slots.sql` — tijdslot enkel per half uur
     instelbaar (databank-brede check-constraint)
+12. `migration_v10_privacy.sql` — klantgegevens enkel nog zichtbaar voor de
+    klant, de admin en de toegewezen student (gemeente-veld, prikbord- en
+    bezet-projecties)
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

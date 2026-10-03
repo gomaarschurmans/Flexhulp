@@ -28,7 +28,8 @@ const bookTimeRangeSchema = z
     end_time: z.string().regex(HALF_HOUR, "Kies een eindtijd op het half uur."),
     category: z.enum(CATEGORIES),
     description: z.string().trim().min(1, "Geef een beschrijving van de klus."),
-    location: z.string().trim().min(1, "Geef een locatie op."),
+    location: z.string().trim().min(1, "Geef een adres op."),
+    city: z.string().trim().min(1, "Geef de gemeente op."),
     extra_info: z.string().trim().default(""),
   })
   .refine((data) => data.end_time > data.start_time, {
@@ -49,6 +50,7 @@ export async function bookTimeRange(
     category: formData.get("category"),
     description: formData.get("description"),
     location: formData.get("location"),
+    city: formData.get("city"),
     extra_info: formData.get("extra_info"),
   });
 
@@ -71,6 +73,7 @@ export async function bookTimeRange(
       p_description: parsed.data.description,
       p_location: parsed.data.location,
       p_extra_info: parsed.data.extra_info,
+      p_city: parsed.data.city,
     })
     .select()
     .single<Task>();
@@ -237,7 +240,8 @@ export async function acceptStudent(taskId: string, studentId: string) {
 const editTaskSchema = z.object({
   category: z.enum(CATEGORIES),
   description: z.string().trim().min(1, "Geef een beschrijving van de klus."),
-  location: z.string().trim().min(1, "Geef een locatie op."),
+  location: z.string().trim().min(1, "Geef een adres op."),
+  city: z.string().trim().min(1, "Geef de gemeente op."),
   extra_info: z.string().trim().default(""),
 });
 
@@ -252,6 +256,7 @@ export async function editTask(
     category: formData.get("category"),
     description: formData.get("description"),
     location: formData.get("location"),
+    city: formData.get("city"),
     extra_info: formData.get("extra_info"),
   });
   if (!parsed.success) {
@@ -266,6 +271,7 @@ export async function editTask(
       title: parsed.data.category,
       description: parsed.data.description,
       location: parsed.data.location,
+      city: parsed.data.city,
       extra_info: parsed.data.extra_info,
     })
     .eq("id", id)

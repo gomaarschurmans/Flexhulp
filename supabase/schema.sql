@@ -62,6 +62,7 @@ create table public.tasks (
   time time not null,
   end_time time not null,
   location text not null,
+  city text not null default '',
   hours numeric(5,2) not null check (hours > 0),
   constraint tasks_half_hour_times check (
     extract(minute from time) in (0, 30)
@@ -195,16 +196,8 @@ begin
     raise exception 'Ongeldige aanpassing.';
   end if;
 
-  if old.status = 'open' and new.status = 'accepted' then
-    if old.student_id is not null then
-      raise exception 'Deze taak is al geaccepteerd.';
-    end if;
-    if new.student_id is distinct from auth.uid() then
-      raise exception 'Je kan een taak enkel voor jezelf accepteren.';
-    end if;
-    return new;
-  end if;
-
+  -- Een student kan zichzelf niet aan een taak toewijzen: de klant kiest en
+  -- wijst toe via de acceptStudent() server action (service-role).
   if old.status = 'accepted' and new.status = 'done' then
     if old.student_id is distinct from auth.uid() then
       raise exception 'Dit is niet jouw opdracht.';
@@ -264,7 +257,8 @@ create or replace function public.book_time_range(
   p_category text,
   p_description text,
   p_location text,
-  p_extra_info text
+  p_extra_info text,
+  p_city text
 ) returns public.tasks
 language plpgsql security definer set search_path = public as $$
 declare
@@ -325,20 +319,21 @@ begin
   select hourly_rate into v_rate from public.platform_settings where id = 1;
 
   insert into public.tasks (
-    title, category, description, date, time, end_time, location, hours,
+    title, category, description, date, time, end_time, location, city, hours,
     rate_at_creation, client_id, client_name, client_email, client_phone,
     status, extra_info, window_id
   ) values (
     p_category, p_category, p_description, v_window.slot_date, p_start_time, p_end_time,
-    p_location, v_hours, v_rate, v_profile.id, v_profile.name, v_profile.email, v_profile.phone,
+    p_location, coalesce(p_city, ''), v_hours, v_rate, v_profile.id, v_profile.name,
+    v_profile.email, v_profile.phone,
     'open', coalesce(p_extra_info, ''), p_window_id
   ) returning * into v_task;
 
   return v_task;
 end;
 $$;
-revoke all on function public.book_time_range(uuid, time, time, text, text, text, text) from public;
-grant execute on function public.book_time_range(uuid, time, time, text, text, text, text) to authenticated;
+revoke all on function public.book_time_range(uuid, time, time, text, text, text, text, text) from public;
+grant execute on function public.book_time_range(uuid, time, time, text, text, text, text, text) to authenticated;
 
 -- =========================================================
 -- RLS — tasks
@@ -346,8 +341,10 @@ grant execute on function public.book_time_range(uuid, time, time, text, text, t
 create policy "tasks_select_own_client" on public.tasks for select
   to authenticated using (client_id = auth.uid());
 
-create policy "tasks_select_open_or_own_student" on public.tasks for select
-  to authenticated using (status = 'open' or student_id = auth.uid());
+-- Studenten zien enkel hun TOEGEWEZEN taak volledig; open klussen zien ze
+-- via task_board (zonder klantgegevens), zie onderaan.
+create policy "tasks_select_assigned_student" on public.tasks for select
+  to authenticated using (student_id = auth.uid());
 
 create policy "tasks_select_admin" on public.tasks for select
   to authenticated using (public.get_my_role() = 'admin');
@@ -366,11 +363,11 @@ create policy "tasks_delete_own_open_client" on public.tasks for delete
 create policy "tasks_delete_admin" on public.tasks for delete
   to authenticated using (public.get_my_role() = 'admin');
 
--- Alleen eigendom wordt hier gecontroleerd — de enforce_task_transitions()
--- trigger bewaakt de eigenlijke open->accepted->done statusmachine.
+-- Een student kan enkel zijn eigen toegewezen taak bijwerken (afronden);
+-- de enforce_task_transitions()-trigger bewaakt accepted->done.
 create policy "tasks_update_student" on public.tasks for update
   to authenticated
-  using (public.get_my_role() = 'student' and (status = 'open' or student_id = auth.uid()))
+  using (public.get_my_role() = 'student' and student_id = auth.uid())
   with check (public.get_my_role() = 'student' and student_id = auth.uid());
 
 create policy "tasks_update_admin" on public.tasks for update
@@ -443,6 +440,80 @@ create policy "requests_delete_admin" on public.requests for delete
   to authenticated using (public.get_my_role() = 'admin');
 
 -- =========================================================
+-- Publieke projecties van tasks, zonder persoonsgegevens, bijgehouden door
+-- een trigger. tasks zelf is enkel leesbaar voor de klant, de admin en de
+-- toegewezen student.
+--  * task_busy: bezette tijdstippen (voor klanten die boeken)
+--  * task_board: open klussen met enkel gemeente (voor studenten)
+-- =========================================================
+create table public.task_busy (
+  id uuid primary key,
+  date date not null,
+  time time not null,
+  end_time time not null
+);
+alter table public.task_busy enable row level security;
+alter publication supabase_realtime add table public.task_busy;
+
+create policy "task_busy_select_authenticated" on public.task_busy for select
+  to authenticated using (true);
+
+create table public.task_board (
+  id uuid primary key,
+  category text not null,
+  description text not null default '',
+  city text not null default '',
+  date date not null,
+  time time not null,
+  end_time time not null,
+  hours numeric(5,2) not null,
+  rate_at_creation numeric(10,2) not null,
+  created_at timestamptz not null
+);
+alter table public.task_board enable row level security;
+alter publication supabase_realtime add table public.task_board;
+
+create policy "task_board_select_student_admin" on public.task_board for select
+  to authenticated using (public.get_my_role() in ('student', 'admin'));
+
+create or replace function public.sync_task_projections()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'DELETE' then
+    delete from public.task_busy where id = old.id;
+    delete from public.task_board where id = old.id;
+    return old;
+  end if;
+
+  insert into public.task_busy (id, date, time, end_time)
+  values (new.id, new.date, new.time, new.end_time)
+  on conflict (id) do update
+    set date = excluded.date, time = excluded.time, end_time = excluded.end_time;
+
+  if new.status = 'open' then
+    insert into public.task_board
+      (id, category, description, city, date, time, end_time, hours, rate_at_creation, created_at)
+    values
+      (new.id, new.category, new.description, new.city, new.date, new.time,
+       new.end_time, new.hours, new.rate_at_creation, new.created_at)
+    on conflict (id) do update
+      set category = excluded.category, description = excluded.description,
+          city = excluded.city, date = excluded.date, time = excluded.time,
+          end_time = excluded.end_time, hours = excluded.hours,
+          rate_at_creation = excluded.rate_at_creation;
+  else
+    delete from public.task_board where id = new.id;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger tasks_sync_projections
+  after insert or update or delete on public.tasks
+  for each row execute function public.sync_task_projections();
+
+-- =========================================================
 -- task_applications — studenten tonen interesse in een openstaande taak;
 -- de klant kiest zelf wie de taak toegewezen krijgt (zie acceptStudent()
 -- server action, die na verificatie via de service-role client schrijft).
@@ -478,10 +549,7 @@ create policy "applications_insert_student" on public.task_applications for inse
   to authenticated with check (
     public.get_my_role() = 'student'
     and student_id = auth.uid()
-    and exists (
-      select 1 from public.tasks t
-      where t.id = task_id and t.status = 'open' and t.student_id is null
-    )
+    and exists (select 1 from public.task_board tb where tb.id = task_id)
     and not exists (
       select 1 from public.profiles p where p.id = auth.uid() and p.banned
     )

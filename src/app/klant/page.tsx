@@ -38,7 +38,7 @@ export default async function KlantPage({
       .eq("client_id", user!.id)
       .order("created_at", { ascending: false }),
     supabase.from("availability").select("*").gte("slot_date", todayISO),
-    supabase.from("tasks").select("*").eq("status", "open").gte("date", todayISO),
+    supabase.from("task_busy").select("*").gte("date", todayISO),
     supabase
       .from("requests")
       .select("*")

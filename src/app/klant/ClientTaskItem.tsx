@@ -75,7 +75,17 @@ export function ClientTaskItem({
             />
           </div>
           <div className="field mb-3">
-            <label htmlFor={`location-${task.id}`}>Locatie</label>
+            <label htmlFor={`city-${task.id}`}>Gemeente</label>
+            <input
+              id={`city-${task.id}`}
+              name="city"
+              type="text"
+              defaultValue={task.city}
+              required
+            />
+          </div>
+          <div className="field mb-3">
+            <label htmlFor={`location-${task.id}`}>Adres van de klus</label>
             <input
               id={`location-${task.id}`}
               name="location"

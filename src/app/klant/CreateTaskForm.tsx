@@ -13,9 +13,9 @@ import {
   type TimeRange,
 } from "@/lib/utils";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
-import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
+import { useRealtimeRows } from "@/hooks/useRealtimeRows";
 import { Turnstile } from "@/components/Turnstile";
-import type { AvailabilitySlot, Task } from "@/lib/types/domain";
+import type { AvailabilitySlot, BusySlot } from "@/lib/types/domain";
 
 const initialState: BookSlotState = { error: null };
 
@@ -26,11 +26,11 @@ export function CreateTaskForm({
 }: {
   rate: number;
   initialSlots: AvailabilitySlot[];
-  initialBusyTasks: Task[];
+  initialBusyTasks: BusySlot[];
 }) {
   const [state, formAction, pending] = useActionState(bookTimeRange, initialState);
   const slots = useRealtimeAvailability(initialSlots);
-  const busyTasks = useRealtimeTasks(initialBusyTasks);
+  const busyTasks = useRealtimeRows<BusySlot>("task_busy", initialBusyTasks);
 
   const windowGaps = useMemo(() => {
     const map = new Map<string, TimeRange[]>();
@@ -254,14 +254,32 @@ export function CreateTaskForm({
             />
           </div>
           <div className="field mb-4">
-            <label htmlFor="location">Locatie</label>
+            <label htmlFor="city">Gemeente</label>
+            <input
+              id="city"
+              name="city"
+              type="text"
+              placeholder="bv. Borgloon"
+              autoComplete="address-level2"
+              required
+            />
+            <p className="mt-1 text-xs text-ink-soft">
+              Enkel de gemeente is zichtbaar voor studenten die interesse tonen.
+            </p>
+          </div>
+          <div className="field mb-4">
+            <label htmlFor="location">Adres van de klus</label>
             <input
               id="location"
               name="location"
               type="text"
-              placeholder="bv. Sint-Truiden"
+              placeholder="Straat, huisnummer, postcode"
+              autoComplete="street-address"
               required
             />
+            <p className="mt-1 text-xs text-ink-soft">
+              Wordt pas getoond aan de student die jij kiest.
+            </p>
           </div>
           <div className="field mb-1">
             <label htmlFor="extra_info">Extra info / benodigdheden</label>

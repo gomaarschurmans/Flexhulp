@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
 import { newApplicationClientEmail, taskCompletedEmail } from "@/lib/resend/templates";
 import { sendSms } from "@/lib/sms";
@@ -22,15 +23,8 @@ export async function applyToTask(taskId: string) {
     .single();
   if (!profile) return;
 
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("id", taskId)
-    .eq("status", "open")
-    .is("student_id", null)
-    .single<Task>();
-  if (!task) return;
-
+  // De student mag de volledige taak niet lezen (klantgegevens): de RLS-policy
+  // op task_applications controleert zelf of de klus op het prikbord staat.
   const { error } = await supabase.from("task_applications").insert({
     task_id: taskId,
     student_id: user.id,
@@ -43,6 +37,13 @@ export async function applyToTask(taskId: string) {
     revalidatePath("/student");
     return;
   }
+
+  const { data: task } = await createAdminClient()
+    .from("tasks")
+    .select("*")
+    .eq("id", taskId)
+    .single<Task>();
+  if (!task) return;
 
   try {
     const { subject, html } = newApplicationClientEmail(task, profile.name);

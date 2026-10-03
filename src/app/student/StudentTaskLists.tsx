@@ -2,22 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
+import { useRealtimeRows } from "@/hooks/useRealtimeRows";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
-import { TaskCard } from "@/components/TaskCard";
+import { AssignedTaskCard, BoardTaskCard } from "@/components/TaskCard";
 import { applyToTask, withdrawApplication, completeTask } from "@/app/student/actions";
 import { CATEGORIES } from "@/lib/constants";
-import type { Task, TaskApplication } from "@/lib/types/domain";
+import type { BoardTask, Task, TaskApplication } from "@/lib/types/domain";
 
 export function StudentTaskLists({
-  initialTasks,
+  initialAssigned,
+  initialBoard,
   initialApplications,
   userId,
 }: {
-  initialTasks: Task[];
+  initialAssigned: Task[];
+  initialBoard: BoardTask[];
   initialApplications: TaskApplication[];
   userId: string;
 }) {
-  const tasks = useRealtimeTasks(initialTasks);
+  const assigned = useRealtimeTasks(initialAssigned);
+  const board = useRealtimeRows<BoardTask>("task_board", initialBoard);
   const applications = useRealtimeApplications(initialApplications);
   const [category, setCategory] = useState("");
 
@@ -31,25 +35,24 @@ export function StudentTaskLists({
 
   const open = useMemo(
     () =>
-      tasks
-        .filter((t) => t.status === "open")
+      board
         .filter((t) => !category || t.category === category)
         .sort((a, b) => (a.created_at > b.created_at ? 1 : -1)),
-    [tasks, category]
+    [board, category]
   );
 
   const mine = useMemo(
     () =>
-      tasks
+      assigned
         .filter((t) => t.student_id === userId)
         .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
-    [tasks, userId]
+    [assigned, userId]
   );
 
   return (
     <div>
       <p className="mb-5 text-sm text-ink-soft">
-        Bekijk openstaande taken en meld je aan voor wat bij je past — de
+        Bekijk openstaande taken en meld je aan voor wat bij je past. De
         klant kiest zelf wie de taak toegewezen krijgt.
       </p>
 
@@ -76,12 +79,11 @@ export function StudentTaskLists({
       ) : (
         <div className="mb-10 flex flex-col gap-3.5">
           {open.map((task) => (
-            <TaskCard
+            <BoardTaskCard
               key={task.id}
               task={task}
-              mode="student-open"
               applied={myApplicationTaskIds.has(task.id)}
-              onAccept={applyToTask.bind(null, task.id)}
+              onApply={applyToTask.bind(null, task.id)}
               onWithdraw={withdrawApplication.bind(null, task.id)}
             />
           ))}
@@ -98,10 +100,9 @@ export function StudentTaskLists({
       ) : (
         <div className="flex flex-col gap-3.5">
           {mine.map((task) => (
-            <TaskCard
+            <AssignedTaskCard
               key={task.id}
               task={task}
-              mode="student-mine"
               onComplete={completeTask.bind(null, task.id)}
             />
           ))}
