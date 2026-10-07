@@ -16,7 +16,7 @@ import {
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
-import { formatTimeRange } from "@/lib/utils";
+import { formatTimeRange, brusselsLocalToDate } from "@/lib/utils";
 import type { HourRequest, Task } from "@/lib/types/domain";
 
 const HALF_HOUR = /^\d{2}:(00|30)$/;
@@ -37,12 +37,24 @@ const bookTimeRangeSchema = z
     path: ["end_time"],
   });
 
-export type BookSlotState = { error: string | null };
+// values: bij een fout sturen we de ingevulde tekstvelden terug, want React
+// wist uncontrolled velden na elke formulieractie en de klant zou anders alles
+// opnieuw moeten typen.
+export type BookSlotState = {
+  error: string | null;
+  success?: boolean;
+  values?: Record<string, string>;
+};
 
 export async function bookTimeRange(
   _prevState: BookSlotState,
   formData: FormData
 ): Promise<BookSlotState> {
+  const values: Record<string, string> = {};
+  for (const key of ["category", "description", "city", "location", "extra_info"]) {
+    values[key] = String(formData.get(key) ?? "");
+  }
+
   const parsed = bookTimeRangeSchema.safeParse({
     window_id: formData.get("window_id"),
     start_time: formData.get("start_time"),
@@ -55,12 +67,12 @@ export async function bookTimeRange(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ongeldige invoer." };
+    return { error: parsed.error.issues[0]?.message ?? "Ongeldige invoer.", values };
   }
 
   const turnstileOk = await verifyTurnstile(formData.get("cf-turnstile-response"));
   if (!turnstileOk) {
-    return { error: "Verificatie mislukt. Probeer opnieuw." };
+    return { error: "Verificatie mislukt. Probeer opnieuw.", values };
   }
 
   const supabase = await createClient();
@@ -79,7 +91,7 @@ export async function bookTimeRange(
     .single<Task>();
 
   if (error) {
-    return { error: error.message };
+    return { error: error.message, values };
   }
 
   try {
@@ -99,7 +111,7 @@ export async function bookTimeRange(
   );
 
   revalidatePath("/klant");
-  return { error: null };
+  return { error: null, success: true };
 }
 
 export async function cancelTask(id: string) {
@@ -111,7 +123,7 @@ export async function cancelTask(id: string) {
     .eq("id", id)
     .eq("status", "open")
     .single<Task>();
-  if (!task) return;
+  if (!task) return { error: "Deze boeking kan niet meer ingetrokken worden." };
 
   const { data: settings } = await supabase
     .from("platform_settings")
@@ -120,10 +132,12 @@ export async function cancelTask(id: string) {
     .single();
   const noticeHours = settings?.cancellation_notice_hours ?? 24;
 
-  const taskStart = new Date(`${task.date}T${task.time}`);
+  const taskStart = brusselsLocalToDate(task.date, task.time);
   const deadline = new Date(taskStart.getTime() - noticeHours * 60 * 60 * 1000);
   if (new Date() > deadline) {
-    redirect("/klant?error=cancel_too_late");
+    return {
+      error: `Je kan deze boeking niet meer intrekken. Dat kan enkel tot ${noticeHours} uur op voorhand.`,
+    };
   }
 
   await supabase.from("tasks").delete().eq("id", id).eq("status", "open");
@@ -191,7 +205,7 @@ export async function acceptStudent(taskId: string, studentId: string) {
     .eq("client_id", user.id)
     .eq("status", "open")
     .single<Task>();
-  if (!task) return;
+  if (!task) return { error: "Deze klus is al toegewezen of bestaat niet meer." };
 
   const { data: application } = await supabase
     .from("task_applications")
@@ -199,7 +213,9 @@ export async function acceptStudent(taskId: string, studentId: string) {
     .eq("task_id", taskId)
     .eq("student_id", studentId)
     .single();
-  if (!application) return;
+  if (!application) {
+    return { error: "Deze student heeft zijn aanmelding ingetrokken." };
+  }
 
   const admin = createAdminClient();
   const { data: updated, error } = await admin
@@ -215,7 +231,9 @@ export async function acceptStudent(taskId: string, studentId: string) {
     .select()
     .single<Task>();
 
-  if (error || !updated) return;
+  if (error || !updated) {
+    return { error: "Toewijzen is mislukt. Probeer opnieuw." };
+  }
 
   try {
     const { subject, html } = studentChosenEmail(updated);
@@ -335,12 +353,21 @@ const submitRequestSchema = z.object({
   description: z.string().trim().default(""),
 });
 
-export type RequestState = { error: string | null; success: boolean };
+export type RequestState = {
+  error: string | null;
+  success: boolean;
+  values?: Record<string, string>;
+};
 
 export async function submitRequest(
   _prevState: RequestState,
   formData: FormData
 ): Promise<RequestState> {
+  const values: Record<string, string> = {};
+  for (const key of ["category", "estimated_hours", "preferred_period", "description"]) {
+    values[key] = String(formData.get(key) ?? "");
+  }
+
   const parsed = submitRequestSchema.safeParse({
     category: formData.get("category"),
     estimated_hours: formData.get("estimated_hours"),
@@ -351,12 +378,13 @@ export async function submitRequest(
     return {
       error: parsed.error.issues[0]?.message ?? "Ongeldige invoer.",
       success: false,
+      values,
     };
   }
 
   const turnstileOk = await verifyTurnstile(formData.get("cf-turnstile-response"));
   if (!turnstileOk) {
-    return { error: "Verificatie mislukt. Probeer opnieuw.", success: false };
+    return { error: "Verificatie mislukt. Probeer opnieuw.", success: false, values };
   }
 
   const supabase = await createClient();
@@ -395,6 +423,7 @@ export async function submitRequest(
     return {
       error: "Aanvraag versturen is mislukt. Probeer opnieuw.",
       success: false,
+      values,
     };
   }
 

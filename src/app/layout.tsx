@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/Toast";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -45,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <body className={`${fraunces.variable} ${inter.variable} font-sans`}>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

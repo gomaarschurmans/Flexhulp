@@ -29,7 +29,11 @@ export function RequestForm() {
         <form action={formAction}>
           <div className="field mb-3">
             <label htmlFor="request_category">Categorie</label>
-            <select id="request_category" name="category" defaultValue={CATEGORIES[0]}>
+            <select
+              id="request_category"
+              name="category"
+              defaultValue={state.values?.category || CATEGORIES[0]}
+            >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -46,6 +50,7 @@ export function RequestForm() {
               step="0.5"
               min="0.5"
               placeholder="bv. 6"
+              defaultValue={state.values?.estimated_hours ?? ""}
               required
             />
           </div>
@@ -56,6 +61,7 @@ export function RequestForm() {
               name="preferred_period"
               type="text"
               placeholder="bv. week van 12 oktober, zo snel mogelijk..."
+              defaultValue={state.values?.preferred_period ?? ""}
               required
             />
           </div>
@@ -65,6 +71,7 @@ export function RequestForm() {
               id="request_description"
               name="description"
               placeholder="Waarvoor heb je hulp nodig?"
+              defaultValue={state.values?.description ?? ""}
             />
           </div>
           <Turnstile />

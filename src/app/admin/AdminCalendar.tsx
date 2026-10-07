@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
 import type { AvailabilitySlot, PaymentStatus, Task } from "@/lib/types/domain";
@@ -242,11 +243,17 @@ function DayDetail({
                   </p>
                 )}
                 {t.status === "open" && (
-                  <form action={markTaskDone.bind(null, t.id)}>
-                    <button type="submit" className="btn btn-ghost px-3 py-1.5 text-xs">
-                      Markeer voltooid
-                    </button>
-                  </form>
+                  <ConfirmAction
+                    action={markTaskDone.bind(null, t.id)}
+                    label="Markeer voltooid"
+                    className="btn btn-ghost px-3 py-1.5 text-xs"
+                    successMessage="Klus voltooid. De klant ontvangt de factuur per mail."
+                    confirm={{
+                      title: "Klus als voltooid markeren?",
+                      text: `${t.client_name} ontvangt meteen een factuur per mail (met betaallink als online betalen actief is). Dit kan je niet ongedaan maken.`,
+                      confirmLabel: "Ja, voltooid",
+                    }}
+                  />
                 )}
               </div>
             ))}

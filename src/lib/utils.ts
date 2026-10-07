@@ -91,6 +91,35 @@ export function computeFreeGaps(
   return gaps;
 }
 
+/**
+ * Zet een datum + tijd in Belgische tijd (zoals opgeslagen) om naar het
+ * juiste tijdstip. new Date("2026-10-12T12:00") op de server (UTC) zou
+ * anders 1 à 2 uur ernaast zitten.
+ */
+export function brusselsLocalToDate(date: string, time: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  const [hh, mm] = time.split(":").map(Number);
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Brussels",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(guess));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour") % 24,
+    get("minute")
+  );
+  return new Date(guess - (asUtc - guess));
+}
+
 export function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.slice(0, 5).split(":").map(Number);
   const total = ((h * 60 + m + minutes) % 1440 + 1440) % 1440;

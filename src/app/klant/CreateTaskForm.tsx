@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useToast } from "@/components/Toast";
 import { bookTimeRange, type BookSlotState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
 import {
@@ -29,6 +30,12 @@ export function CreateTaskForm({
   initialBusyTasks: BusySlot[];
 }) {
   const [state, formAction, pending] = useActionState(bookTimeRange, initialState);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (state.success) toast("Boeking geplaatst! Je vindt ze rechts bij jouw taken.");
+  }, [state, toast]);
+
   const slots = useRealtimeAvailability(initialSlots);
   const busyTasks = useRealtimeRows<BusySlot>("task_busy", initialBusyTasks);
 
@@ -236,7 +243,11 @@ export function CreateTaskForm({
           )}
           <div className="field mb-4">
             <label htmlFor="category">Categorie</label>
-            <select id="category" name="category" defaultValue={CATEGORIES[0]}>
+            <select
+              id="category"
+              name="category"
+              defaultValue={state.values?.category || CATEGORIES[0]}
+            >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -250,6 +261,7 @@ export function CreateTaskForm({
               id="description"
               name="description"
               placeholder="Wat moet er gebeuren?"
+              defaultValue={state.values?.description ?? ""}
               required
             />
           </div>
@@ -261,6 +273,7 @@ export function CreateTaskForm({
               type="text"
               placeholder="bv. Borgloon"
               autoComplete="address-level2"
+              defaultValue={state.values?.city ?? ""}
               required
             />
             <p className="mt-1 text-xs text-ink-soft">
@@ -275,6 +288,7 @@ export function CreateTaskForm({
               type="text"
               placeholder="Straat, huisnummer, postcode"
               autoComplete="street-address"
+              defaultValue={state.values?.location ?? ""}
               required
             />
             <p className="mt-1 text-xs text-ink-soft">
@@ -287,6 +301,7 @@ export function CreateTaskForm({
               id="extra_info"
               name="extra_info"
               placeholder="Specifieke vragen, benodigdheden of voorzieningen die gebruikt kunnen worden."
+              defaultValue={state.values?.extra_info ?? ""}
             />
           </div>
           {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}

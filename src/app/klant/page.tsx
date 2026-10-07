@@ -50,12 +50,6 @@ export default async function KlantPage({
 
   return (
     <div>
-      {error === "cancel_too_late" && (
-        <div className="mb-6 rounded border border-danger/30 bg-[#FBEAE6] px-4 py-3 text-sm text-danger">
-          Je kan deze boeking niet meer intrekken — dat kan enkel tot{" "}
-          {settings?.cancellation_notice_hours ?? 24} uur op voorhand.
-        </div>
-      )}
       {error === "payment_unavailable" && (
         <div className="mb-6 rounded border border-danger/30 bg-[#FBEAE6] px-4 py-3 text-sm text-danger">
           Online betalen is momenteel niet beschikbaar. Neem contact op met Flexhulp.

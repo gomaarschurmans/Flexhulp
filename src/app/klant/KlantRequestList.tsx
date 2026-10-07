@@ -2,6 +2,7 @@
 
 import { useRealtimeRequests } from "@/hooks/useRealtimeRequests";
 import { cancelRequest } from "@/app/klant/actions";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import type { HourRequest } from "@/lib/types/domain";
 
 export function KlantRequestList({
@@ -33,11 +34,17 @@ export function KlantRequestList({
               </span>
             </span>
             {r.status === "open" && (
-              <form action={cancelRequest.bind(null, r.id)}>
-                <button type="submit" className="btn btn-ghost px-3 py-1.5 text-xs">
-                  Intrekken
-                </button>
-              </form>
+              <ConfirmAction
+                action={cancelRequest.bind(null, r.id)}
+                label="Intrekken"
+                className="btn btn-ghost px-3 py-1.5 text-xs"
+                successMessage="Aanvraag ingetrokken."
+                confirm={{
+                  title: "Aanvraag intrekken?",
+                  text: "Flexhulp neemt dan geen contact meer op over deze aanvraag.",
+                  confirmLabel: "Ja, intrekken",
+                }}
+              />
             )}
           </div>
         ))}

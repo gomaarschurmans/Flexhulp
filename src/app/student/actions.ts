@@ -35,7 +35,12 @@ export async function applyToTask(taskId: string) {
 
   if (error) {
     revalidatePath("/student");
-    return;
+    return {
+      error:
+        error.code === "23505"
+          ? "Je bent al aangemeld voor deze klus."
+          : "Aanmelden is niet gelukt. De klus is mogelijk al toegewezen.",
+    };
   }
 
   const { data: task } = await createAdminClient()
@@ -100,7 +105,9 @@ export async function completeTask(id: string) {
 
   revalidatePath("/student");
 
-  if (error || !task) return;
+  if (error || !task) {
+    return { error: "Markeren als voltooid is niet gelukt. Probeer opnieuw." };
+  }
 
   try {
     const { subject, html } = taskCompletedEmail(task);

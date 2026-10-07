@@ -1,12 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
 import { setClientBanned } from "@/app/admin/actions";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import type { Profile } from "@/lib/types/domain";
 
 export function AdminClientsPanel({ clients }: { clients: Profile[] }) {
-  const [isPending, startTransition] = useTransition();
-
   if (clients.length === 0) {
     return (
       <div className="rounded border border-dashed border-line p-8 text-center text-sm text-ink-soft">
@@ -43,16 +41,25 @@ export function AdminClientsPanel({ clients }: { clients: Profile[] }) {
                 )}
               </td>
               <td className="border-b border-line px-3.5 py-2.5">
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(() => setClientBanned(c.id, !c.banned))
-                  }
-                  className="btn btn-ghost px-3.5 py-2 text-xs"
-                >
-                  {c.banned ? "Deblokkeren" : "Blokkeren"}
-                </button>
+                {c.banned ? (
+                  <ConfirmAction
+                    action={setClientBanned.bind(null, c.id, false)}
+                    label="Deblokkeren"
+                    successMessage={`${c.name} is gedeblokkeerd.`}
+                  />
+                ) : (
+                  <ConfirmAction
+                    action={setClientBanned.bind(null, c.id, true)}
+                    label="Blokkeren"
+                    successMessage={`${c.name} is geblokkeerd.`}
+                    confirm={{
+                      title: `${c.name} blokkeren?`,
+                      text: "Deze klant kan dan niet meer boeken of aanvragen indienen. Je kan dit later ongedaan maken.",
+                      confirmLabel: "Ja, blokkeer",
+                      danger: true,
+                    }}
+                  />
+                )}
               </td>
             </tr>
           ))}

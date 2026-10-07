@@ -15,6 +15,7 @@ import { CATEGORIES } from "@/lib/constants";
 import { formatTimeRange, formatEuro } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import type { InvoiceSummary, Task, TaskApplication } from "@/lib/types/domain";
 
 const editInitial: EditTaskState = { error: null };
@@ -173,11 +174,17 @@ export function ClientTaskItem({
           >
             Bewerken
           </button>
-          <form action={cancelTask.bind(null, task.id)}>
-            <button type="submit" className="btn btn-ghost text-xs px-3.5 py-2">
-              Intrekken
-            </button>
-          </form>
+          <ConfirmAction
+            action={cancelTask.bind(null, task.id)}
+            label="Intrekken"
+            successMessage="Boeking ingetrokken."
+            confirm={{
+              title: "Boeking intrekken?",
+              text: "Het tijdstip komt weer vrij voor andere klanten. Intrekken kan enkel tot een bepaald aantal uren voor de klus.",
+              confirmLabel: "Ja, intrekken",
+              danger: true,
+            }}
+          />
         </div>
       )}
 
@@ -194,11 +201,17 @@ export function ClientTaskItem({
                 className="flex items-center justify-between gap-2 rounded border border-line bg-[#FAF9F6] px-3 py-2 text-sm"
               >
                 <span>{a.student_name}</span>
-                <form action={acceptStudent.bind(null, task.id, a.student_id)}>
-                  <button type="submit" className="btn btn-teal text-xs px-3 py-1.5">
-                    Accepteer
-                  </button>
-                </form>
+                <ConfirmAction
+                  action={acceptStudent.bind(null, task.id, a.student_id)}
+                  label="Accepteer"
+                  className="btn btn-teal text-xs px-3 py-1.5"
+                  successMessage={`${a.student_name} is toegewezen aan je klus.`}
+                  confirm={{
+                    title: `${a.student_name} kiezen?`,
+                    text: "Deze student krijgt je volledige adres en contactgegevens te zien en een bevestiging per mail.",
+                    confirmLabel: "Ja, kies deze student",
+                  }}
+                />
               </div>
             ))}
           </div>

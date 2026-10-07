@@ -100,8 +100,8 @@ export async function markTaskDone(id: string) {
 
   try {
     const checkoutUrl = await getOrCreateTaskPayment(task);
-    if (checkoutUrl) {
-      const invoiceUrl = invoice ? `${SITE_URL}/klant/facturen/${invoice.id}` : null;
+    const invoiceUrl = invoice ? `${SITE_URL}/klant/facturen/${invoice.id}` : null;
+    if (checkoutUrl || invoiceUrl) {
       const { subject, html } = paymentRequestEmail(task, checkoutUrl, invoice, invoiceUrl);
       await getResend().emails.send({
         from: FROM_EMAIL,
@@ -120,7 +120,15 @@ export async function markTaskDone(id: string) {
 
 export async function adminDeleteTask(id: string) {
   const supabase = await createClient();
-  await supabase.from("tasks").delete().eq("id", id);
+  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  if (error) {
+    return {
+      error:
+        error.code === "23503"
+          ? "Deze taak heeft een factuur en kan niet verwijderd worden."
+          : "Verwijderen is mislukt. Probeer opnieuw.",
+    };
+  }
   revalidatePath("/admin");
 }
 

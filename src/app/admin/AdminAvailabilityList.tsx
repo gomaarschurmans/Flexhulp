@@ -3,6 +3,7 @@
 import { useRealtimeAvailability } from "@/hooks/useRealtimeAvailability";
 import { removeAvailability } from "@/app/admin/actions";
 import { sortAvailability } from "@/lib/utils";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import type { AvailabilitySlot } from "@/lib/types/domain";
 
 export function AdminAvailabilityList({
@@ -35,11 +36,17 @@ export function AdminAvailabilityList({
             })}
             , {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
           </span>
-          <form action={removeAvailability.bind(null, s.id)}>
-            <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
-              Verwijder
-            </button>
-          </form>
+          <ConfirmAction
+            action={removeAvailability.bind(null, s.id)}
+            label="Verwijder"
+            successMessage="Tijdvenster verwijderd."
+            confirm={{
+              title: "Tijdvenster verwijderen?",
+              text: "Klanten kunnen dan niet meer in dit venster boeken. Bestaande boekingen blijven staan.",
+              confirmLabel: "Ja, verwijder",
+              danger: true,
+            }}
+          />
         </div>
       ))}
     </div>

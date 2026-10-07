@@ -76,13 +76,15 @@ export function taskCancelledAdminEmail(task: Task) {
 
 export function paymentRequestEmail(
   task: Task,
-  checkoutUrl: string,
+  checkoutUrl: string | null,
   invoice: Invoice | null,
   invoiceUrl: string | null
 ) {
   const amount = formatEuro(task.hours * task.rate_at_creation);
   return {
-    subject: `Betaalverzoek: ${task.category} — ${amount}`,
+    subject: checkoutUrl
+      ? `Betaalverzoek: ${task.category}, ${amount}`
+      : `Factuur: ${task.category}, ${amount}`,
     html: wrapper(
       "Je taak is voltooid",
       `<p>Bedankt! <strong>${task.category}</strong> op
@@ -90,12 +92,16 @@ export function paymentRequestEmail(
        <p>Te betalen: <strong>${amount}</strong> (${task.hours} u × ${formatEuro(task.rate_at_creation)})</p>
        ${invoice ? `<p>Factuur: <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong></p>` : ""}
        <p style="margin-top: 20px;">
-         <a href="${checkoutUrl}" style="display: inline-block; background: #16181D; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-           Betaal nu
-         </a>
+         ${
+           checkoutUrl
+             ? `<a href="${checkoutUrl}" style="display: inline-block; background: #16181D; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                 Betaal nu
+               </a>`
+             : ""
+         }
          ${
            invoiceUrl
-             ? `<a href="${invoiceUrl}" style="display: inline-block; margin-left: 10px; color: #16181D; padding: 12px 0; text-decoration: underline; font-weight: 600;">
+             ? `<a href="${invoiceUrl}" style="display: inline-block; margin-left: ${checkoutUrl ? "10px" : "0"}; color: #16181D; padding: 12px 0; text-decoration: underline; font-weight: 600;">
                  Bekijk factuur
                </a>`
              : ""

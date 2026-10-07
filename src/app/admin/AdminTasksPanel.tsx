@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
@@ -98,11 +99,16 @@ export function AdminTasksPanel({
                   <td className="border-b border-line px-3.5 py-2.5">
                     <div className="flex flex-wrap gap-2">
                       {t.status === "open" && (
-                        <form action={markTaskDone.bind(null, t.id)}>
-                          <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
-                            Markeer voltooid
-                          </button>
-                        </form>
+                        <ConfirmAction
+                          action={markTaskDone.bind(null, t.id)}
+                          label="Markeer voltooid"
+                          successMessage="Klus voltooid. De klant ontvangt de factuur per mail."
+                          confirm={{
+                            title: "Klus als voltooid markeren?",
+                            text: `${t.client_name} ontvangt meteen een factuur per mail (met betaallink als online betalen actief is). Dit kan je niet ongedaan maken.`,
+                            confirmLabel: "Ja, voltooid",
+                          }}
+                        />
                       )}
                       {(() => {
                         const invoice = invoices.find((i) => i.task_id === t.id);
@@ -115,11 +121,17 @@ export function AdminTasksPanel({
                           </Link>
                         ) : null;
                       })()}
-                      <form action={adminDeleteTask.bind(null, t.id)}>
-                        <button type="submit" className="btn btn-ghost px-3.5 py-2 text-xs">
-                          Verwijder
-                        </button>
-                      </form>
+                      <ConfirmAction
+                        action={adminDeleteTask.bind(null, t.id)}
+                        label="Verwijder"
+                        successMessage="Taak verwijderd."
+                        confirm={{
+                          title: "Taak verwijderen?",
+                          text: "De taak verdwijnt definitief en het tijdstip komt weer vrij. Een taak met een factuur kan om boekhoudkundige redenen niet verwijderd worden.",
+                          confirmLabel: "Ja, verwijder",
+                          danger: true,
+                        }}
+                      />
                     </div>
                   </td>
                 </tr>

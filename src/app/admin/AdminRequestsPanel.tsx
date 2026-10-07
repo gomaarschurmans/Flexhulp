@@ -2,6 +2,7 @@
 
 import { useRealtimeRequests } from "@/hooks/useRealtimeRequests";
 import { markRequestHandled, deleteRequest } from "@/app/admin/actions";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import type { HourRequest } from "@/lib/types/domain";
 
 export function AdminRequestsPanel({
@@ -48,16 +49,24 @@ export function AdminRequestsPanel({
           </p>
           {r.description && <p className="mb-2">{r.description}</p>}
           <div className="flex gap-2">
-            <form action={markRequestHandled.bind(null, r.id)}>
-              <button type="submit" className="btn btn-ghost px-3 py-1.5 text-xs">
-                Markeer afgehandeld
-              </button>
-            </form>
-            <form action={deleteRequest.bind(null, r.id)}>
-              <button type="submit" className="btn btn-ghost px-3 py-1.5 text-xs">
-                Verwijder
-              </button>
-            </form>
+            <ConfirmAction
+              action={markRequestHandled.bind(null, r.id)}
+              label="Markeer afgehandeld"
+              className="btn btn-ghost px-3 py-1.5 text-xs"
+              successMessage="Aanvraag afgehandeld."
+            />
+            <ConfirmAction
+              action={deleteRequest.bind(null, r.id)}
+              label="Verwijder"
+              className="btn btn-ghost px-3 py-1.5 text-xs"
+              successMessage="Aanvraag verwijderd."
+              confirm={{
+                title: "Aanvraag verwijderen?",
+                text: "De aanvraag verdwijnt ook bij de klant.",
+                confirmLabel: "Ja, verwijder",
+                danger: true,
+              }}
+            />
           </div>
         </div>
       ))}
@@ -76,11 +85,18 @@ export function AdminRequestsPanel({
                 <span>
                   {r.category} · ±{r.estimated_hours} u · {r.client_name}
                 </span>
-                <form action={deleteRequest.bind(null, r.id)}>
-                  <button type="submit" className="btn btn-ghost px-3 py-1 text-xs">
-                    Verwijder
-                  </button>
-                </form>
+                <ConfirmAction
+                  action={deleteRequest.bind(null, r.id)}
+                  label="Verwijder"
+                  className="btn btn-ghost px-3 py-1 text-xs"
+                  successMessage="Aanvraag verwijderd."
+                  confirm={{
+                    title: "Aanvraag verwijderen?",
+                    text: "De aanvraag verdwijnt ook bij de klant.",
+                    confirmLabel: "Ja, verwijder",
+                    danger: true,
+                  }}
+                />
               </div>
             ))}
           </div>

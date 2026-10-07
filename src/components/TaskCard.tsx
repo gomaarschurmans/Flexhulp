@@ -1,8 +1,9 @@
 import type { BoardTask, Task } from "@/lib/types/domain";
 import { formatEuro, formatTimeRange } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ConfirmAction } from "@/components/ConfirmAction";
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+type Action = () => Promise<void | { error?: string }>;
 
 export function BoardTaskCard({
   task,
@@ -12,8 +13,8 @@ export function BoardTaskCard({
 }: {
   task: BoardTask;
   applied: boolean;
-  onApply: FormAction;
-  onWithdraw: FormAction;
+  onApply: Action;
+  onWithdraw: Action;
 }) {
   return (
     <div className="card">
@@ -53,18 +54,24 @@ export function BoardTaskCard({
         {applied ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-ink-soft">Aangemeld, wacht op klant</span>
-            <form action={onWithdraw}>
-              <button type="submit" className="btn btn-ghost text-xs px-3.5 py-2">
-                Intrekken
-              </button>
-            </form>
+            <ConfirmAction
+              action={onWithdraw}
+              label="Intrekken"
+              successMessage="Aanmelding ingetrokken."
+              confirm={{
+                title: "Aanmelding intrekken?",
+                text: "De klant ziet jou dan niet meer tussen de geïnteresseerden voor deze klus. Je kan je later opnieuw aanmelden zolang de klus open staat.",
+                confirmLabel: "Ja, intrekken",
+              }}
+            />
           </div>
         ) : (
-          <form action={onApply}>
-            <button type="submit" className="btn btn-teal text-xs px-3.5 py-2">
-              Ik wil dit doen
-            </button>
-          </form>
+          <ConfirmAction
+            action={onApply}
+            label="Ik wil dit doen"
+            className="btn btn-teal text-xs px-3.5 py-2"
+            successMessage="Aangemeld! De klant kiest wie de klus krijgt."
+          />
         )}
       </div>
     </div>
@@ -76,7 +83,7 @@ export function AssignedTaskCard({
   onComplete,
 }: {
   task: Task;
-  onComplete: FormAction;
+  onComplete: Action;
 }) {
   return (
     <div className="card">
@@ -120,11 +127,17 @@ export function AssignedTaskCard({
 
       <div className="flex flex-wrap items-center justify-end gap-2.5">
         {task.status === "accepted" && (
-          <form action={onComplete}>
-            <button type="submit" className="btn btn-teal text-xs px-3.5 py-2">
-              Markeer als voltooid
-            </button>
-          </form>
+          <ConfirmAction
+            action={onComplete}
+            label="Markeer als voltooid"
+            className="btn btn-teal text-xs px-3.5 py-2"
+            successMessage="Klus als voltooid gemarkeerd."
+            confirm={{
+              title: "Klus voltooid?",
+              text: "De klant krijgt hiervan een melding. Dit kan je niet meer ongedaan maken.",
+              confirmLabel: "Ja, voltooid",
+            }}
+          />
         )}
         {task.status === "done" && (
           <span className="text-sm text-ink-soft">Afgerond</span>
