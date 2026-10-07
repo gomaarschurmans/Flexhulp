@@ -122,8 +122,8 @@ maar zijn aan te raden voor echt gebruik:
 - **Account-verwijdering (GDPR)**: vereist `SUPABASE_SERVICE_ROLE_KEY`
   (Supabase → Project Settings → API → `service_role` key). **Geheim** — nooit
   delen, nooit als `NEXT_PUBLIC_`-variabele zetten.
-- **Herinneringen**: een dagelijkse Vercel-cron (`vercel.json`, 15:00 UTC)
-  mailt klant en student een dag voor de klus en stuurt de admin een
+- **Herinneringen**: een dagelijkse Vercel-cron (`vercel.json`, 17:00 UTC,
+  dus 19u zomertijd / 18u wintertijd) mailt klant en student 's avonds de dag voor de klus en stuurt de admin een
   planningsoverzicht. Vereist `CRON_SECRET` in Vercel (willekeurige lange
   tekst) en `migration_v12_reminders.sql`. Sms enkel als Twilio ingesteld is.
 - **Online betalen** ([Mollie](https://www.mollie.com), pay-per-transactie,
