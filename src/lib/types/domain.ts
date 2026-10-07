@@ -16,6 +16,7 @@ export interface Profile {
   name: string;
   phone: string | null;
   address: string | null;
+  bio: string | null;
   role: Role;
   banned: boolean;
   created_at: string;
@@ -105,6 +106,10 @@ export interface TaskApplication {
   student_name: string;
   student_email: string;
   student_phone: string | null;
+  student_bio: string | null;
+  student_jobs_done: number;
+  student_avg_rating: number | null;
+  student_rating_count: number;
   created_at: string;
 }
 

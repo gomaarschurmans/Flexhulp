@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStudentStats } from "@/lib/studentStats";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
 import { newApplicationClientEmail, taskCompletedEmail } from "@/lib/resend/templates";
 import { sendSms } from "@/lib/sms";
@@ -18,10 +19,12 @@ export async function applyToTask(taskId: string) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone")
+    .select("name, email, phone, bio")
     .eq("id", user.id)
     .single();
   if (!profile) return;
+
+  const stats = await getStudentStats(user.id);
 
   // De student mag de volledige taak niet lezen (klantgegevens): de RLS-policy
   // op task_applications controleert zelf of de klus op het prikbord staat.
@@ -31,6 +34,10 @@ export async function applyToTask(taskId: string) {
     student_name: profile.name,
     student_email: profile.email,
     student_phone: profile.phone,
+    student_bio: profile.bio,
+    student_jobs_done: stats.jobsDone,
+    student_avg_rating: stats.avgRating,
+    student_rating_count: stats.ratingCount,
   });
 
   if (error) {

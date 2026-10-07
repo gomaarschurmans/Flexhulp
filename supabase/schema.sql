@@ -10,6 +10,7 @@ create table public.profiles (
   name text not null,
   phone text,
   address text,
+  bio text,
   role text not null default 'client' check (role in ('client','student','admin')),
   banned boolean not null default false,
   created_at timestamptz not null default now()
@@ -133,7 +134,7 @@ create trigger on_auth_user_created
 -- Admin toekennen kan alleen via de Dashboard Table Editor (draait als postgres,
 -- omzeilt deze grants en RLS).
 revoke update on public.profiles from authenticated;
-grant update (name, phone, address) on public.profiles to authenticated;
+grant update (name, phone, address, bio) on public.profiles to authenticated;
 
 -- =========================================================
 -- Trigger: bewaakt geldige status-overgangen van een taak
@@ -525,6 +526,11 @@ create table public.task_applications (
   student_name text not null,
   student_email text not null,
   student_phone text,
+  -- Momentopname bij het aanmelden (zie migration_v11_student_profile.sql)
+  student_bio text,
+  student_jobs_done integer not null default 0,
+  student_avg_rating numeric(3,2),
+  student_rating_count integer not null default 0,
   created_at timestamptz not null default now(),
   unique (task_id, student_id)
 );

@@ -198,9 +198,22 @@ export function ClientTaskItem({
             {applications.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between gap-2 rounded border border-line bg-[#FAF9F6] px-3 py-2 text-sm"
+                className="flex items-start justify-between gap-3 rounded border border-line bg-[#FAF9F6] px-3 py-2.5 text-sm"
               >
-                <span>{a.student_name}</span>
+                <div>
+                  <strong>{a.student_name}</strong>
+                  <p className="text-xs text-ink-soft">
+                    {a.student_rating_count > 0 && a.student_avg_rating !== null
+                      ? `★ ${a.student_avg_rating.toFixed(1).replace(".", ",")} (${a.student_rating_count} beoordeling${a.student_rating_count > 1 ? "en" : ""}) · `
+                      : "Nog geen beoordelingen · "}
+                    {a.student_jobs_done === 0
+                      ? "nieuw bij Flexhulp"
+                      : `${a.student_jobs_done} voltooide klus${a.student_jobs_done > 1 ? "sen" : ""}`}
+                  </p>
+                  {a.student_bio && (
+                    <p className="mt-1 text-ink-soft">{a.student_bio}</p>
+                  )}
+                </div>
                 <ConfirmAction
                   action={acceptStudent.bind(null, task.id, a.student_id)}
                   label="Accepteer"

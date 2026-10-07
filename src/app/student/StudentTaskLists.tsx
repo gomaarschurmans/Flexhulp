@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useRealtimeRows } from "@/hooks/useRealtimeRows";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
@@ -14,11 +15,13 @@ export function StudentTaskLists({
   initialBoard,
   initialApplications,
   userId,
+  hasBio,
 }: {
   initialAssigned: Task[];
   initialBoard: BoardTask[];
   initialApplications: TaskApplication[];
   userId: string;
+  hasBio: boolean;
 }) {
   const assigned = useRealtimeTasks(initialAssigned);
   const board = useRealtimeRows<BoardTask>("task_board", initialBoard);
@@ -55,6 +58,16 @@ export function StudentTaskLists({
         Bekijk openstaande taken en meld je aan voor wat bij je past. De
         klant kiest zelf wie de taak toegewezen krijgt.
       </p>
+
+      {!hasBio && (
+        <div className="mb-5 rounded border border-teal/30 bg-teal-soft px-4 py-3 text-sm text-teal">
+          Klanten kiezen sneller een student met een profiel.{" "}
+          <Link href="/account" className="font-semibold underline">
+            Schrijf een korte tekst over jezelf
+          </Link>{" "}
+          voor je je aanmeldt.
+        </div>
+      )}
 
       <div className="mb-4">
         <select

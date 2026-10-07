@@ -14,7 +14,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, address, role")
+    .select("name, email, phone, address, bio, role")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -33,7 +33,12 @@ export default async function AccountPage() {
             <dt className="text-ink-soft">E-mail</dt>
             <dd>{profile.email}</dd>
           </dl>
-          <ProfileForm phone={profile.phone} address={profile.address} />
+          <ProfileForm
+            phone={profile.phone}
+            address={profile.address}
+            bio={profile.bio}
+            isStudent={profile.role === "student"}
+          />
         </div>
 
         <div className="card border-danger/30">

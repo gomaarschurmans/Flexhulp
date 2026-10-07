@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type ProfileState = { error: string | null };
+export type ProfileState = {
+  error: string | null;
+  saved?: boolean;
+  values?: { phone: string; address: string; bio: string };
+};
 
 export async function updateProfile(
   _prevState: ProfileState,
@@ -14,23 +18,41 @@ export async function updateProfile(
   const phone = String(formData.get("phone") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
 
+  // Het "over mij"-veld bestaat enkel in het formulier van studenten.
+  const hasBio = formData.has("bio");
+  const bio = String(formData.get("bio") ?? "").trim().slice(0, 400);
+  // React wist uncontrolled velden na een actie: stuur de waarden terug.
+  const values = { phone, address, bio };
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Je bent niet ingelogd." };
+  if (!user) return { error: "Je bent niet ingelogd.", values };
 
   const { error } = await supabase
     .from("profiles")
-    .update({ phone: phone || null, address: address || null })
+    .update({
+      phone: phone || null,
+      address: address || null,
+      ...(hasBio ? { bio: bio || null } : {}),
+    })
     .eq("id", user.id);
 
   if (error) {
-    return { error: "Opslaan is mislukt. Probeer opnieuw." };
+    return { error: "Opslaan is mislukt. Probeer opnieuw.", values };
+  }
+
+  if (hasBio) {
+    // Lopende aanmeldingen tonen de nieuwe tekst meteen aan de klant.
+    await createAdminClient()
+      .from("task_applications")
+      .update({ student_bio: bio || null })
+      .eq("student_id", user.id);
   }
 
   revalidatePath("/account");
-  return { error: null };
+  return { error: null, saved: true, values };
 }
 
 export async function deleteAccount() {

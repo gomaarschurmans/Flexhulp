@@ -7,7 +7,7 @@ export default async function StudentPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: assigned }, { data: board }, { data: applications }] =
+  const [{ data: assigned }, { data: board }, { data: applications }, { data: profile }] =
     await Promise.all([
       supabase
         .from("tasks")
@@ -16,6 +16,7 @@ export default async function StudentPage() {
         .order("created_at", { ascending: false }),
       supabase.from("task_board").select("*").order("created_at"),
       supabase.from("task_applications").select("*"),
+      supabase.from("profiles").select("bio").eq("id", user!.id).single(),
     ]);
 
   return (
@@ -24,6 +25,7 @@ export default async function StudentPage() {
       initialBoard={board ?? []}
       initialApplications={applications ?? []}
       userId={user!.id}
+      hasBio={Boolean(profile?.bio)}
     />
   );
 }

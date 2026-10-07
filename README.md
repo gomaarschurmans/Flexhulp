@@ -153,6 +153,8 @@ in `supabase/`, in volgorde:
 12. `migration_v10_privacy.sql` — klantgegevens enkel nog zichtbaar voor de
     klant, de admin en de toegewezen student (gemeente-veld, prikbord- en
     bezet-projecties)
+13. `migration_v11_student_profile.sql` — "over mij" voor studenten, met
+    score en aantal klussen op elke aanmelding
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.
