@@ -122,6 +122,10 @@ maar zijn aan te raden voor echt gebruik:
 - **Account-verwijdering (GDPR)**: vereist `SUPABASE_SERVICE_ROLE_KEY`
   (Supabase → Project Settings → API → `service_role` key). **Geheim** — nooit
   delen, nooit als `NEXT_PUBLIC_`-variabele zetten.
+- **Herinneringen**: een dagelijkse Vercel-cron (`vercel.json`, 15:00 UTC)
+  mailt klant en student een dag voor de klus en stuurt de admin een
+  planningsoverzicht. Vereist `CRON_SECRET` in Vercel (willekeurige lange
+  tekst) en `migration_v12_reminders.sql`. Sms enkel als Twilio ingesteld is.
 - **Online betalen** ([Mollie](https://www.mollie.com), pay-per-transactie,
   geen abonnement): maak een account aan, kopieer een API-sleutel
   (Dashboard → Developers → API keys — begin met de `test_`-sleutel) naar
@@ -155,6 +159,8 @@ in `supabase/`, in volgorde:
     bezet-projecties)
 13. `migration_v11_student_profile.sql` — "over mij" voor studenten, met
     score en aantal klussen op elke aanmelding
+14. `migration_v12_reminders.sql` — bijhouden wanneer de herinnering
+    verstuurd werd
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

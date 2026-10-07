@@ -86,6 +86,7 @@ create table public.tasks (
     check (payment_status in ('unpaid','pending','paid','failed','expired','canceled')),
   mollie_payment_id text,
   paid_at timestamptz,
+  reminder_sent_at timestamptz,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz

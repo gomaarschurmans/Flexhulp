@@ -49,6 +49,7 @@ export interface Task {
   payment_status: PaymentStatus;
   mollie_payment_id: string | null;
   paid_at: string | null;
+  reminder_sent_at: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;

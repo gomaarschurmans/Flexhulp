@@ -120,6 +120,11 @@ export function brusselsLocalToDate(date: string, time: string): Date {
   return new Date(guess - (asUtc - guess));
 }
 
+/** "YYYY-MM-DD" van een tijdstip volgens de Belgische klok. */
+export function brusselsDateString(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels" }).format(date);
+}
+
 export function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.slice(0, 5).split(":").map(Number);
   const total = ((h * 60 + m + minutes) % 1440 + 1440) % 1440;

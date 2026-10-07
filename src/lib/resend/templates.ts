@@ -111,6 +111,57 @@ export function paymentRequestEmail(
   };
 }
 
+export function reminderClientEmail(task: Task) {
+  const when = formatTimeRange(task.date, task.time, task.end_time);
+  return {
+    subject: `Herinnering: morgen ${task.category}`,
+    html: wrapper(
+      "Tot morgen!",
+      `<p>Een korte herinnering: <strong>${task.category}</strong> staat morgen gepland.</p>
+       <p>Wanneer: <strong>${when}</strong><br/>
+       Adres: ${task.location}<br/>
+       ${task.student_name ? `Student: <strong>${task.student_name}</strong>` : "Er is nog geen student toegewezen."}</p>
+       <p>Zorg dat de plek bereikbaar is en dat alles klaarligt wat nodig is.</p>`
+    ),
+  };
+}
+
+export function reminderStudentEmail(task: Task) {
+  const when = formatTimeRange(task.date, task.time, task.end_time);
+  return {
+    subject: `Herinnering: morgen ${task.category}`,
+    html: wrapper(
+      "Je klus van morgen",
+      `<p>Een korte herinnering: je hebt morgen een klus.</p>
+       <p><strong>${task.category}</strong><br/>
+       Wanneer: <strong>${when}</strong><br/>
+       Adres: ${task.location}<br/>
+       Klant: ${task.client_name}${task.client_phone ? ` (${task.client_phone})` : ""}</p>
+       ${task.description ? `<p>Wat moet er gebeuren: ${task.description}</p>` : ""}
+       ${task.extra_info ? `<p>Extra info: ${task.extra_info}</p>` : ""}`
+    ),
+  };
+}
+
+export function reminderAdminEmail(tasks: Task[]) {
+  const rows = tasks
+    .map(
+      (t) =>
+        `<li><strong>${t.time.slice(0, 5)} tot ${t.end_time.slice(0, 5)}</strong>, ${t.category}, ${t.client_name}, ${t.location}${
+          t.student_name ? ` (student: ${t.student_name})` : ""
+        }</li>`
+    )
+    .join("");
+  return {
+    subject: `Morgen op de planning: ${tasks.length} klus${tasks.length > 1 ? "sen" : ""}`,
+    html: wrapper(
+      "Planning van morgen",
+      `<ul style="padding-left: 18px;">${rows}</ul>
+       <p>Klanten en studenten hebben hun herinnering gekregen.</p>`
+    ),
+  };
+}
+
 export function newRequestAdminEmail(request: HourRequest) {
   return {
     subject: `Nieuwe aanvraag: ${request.category} — ±${request.estimated_hours} u`,
