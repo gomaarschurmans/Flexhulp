@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { Pagination, PAGE_SIZE } from "@/components/Pagination";
 import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
 import { formatEuro } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
-import type { InvoiceSummary, PaymentStatus, Task } from "@/lib/types/domain";
+import type { InvoiceSummary, PaymentStatus, Task, TaskStatus } from "@/lib/types/domain";
 
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   unpaid: "–",
@@ -45,7 +46,28 @@ export function AdminTasksPanel({
     return { open, accepted, done: done.length, payout };
   }, [tasks]);
 
-  const sorted = [...tasks].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return [...tasks]
+      .filter((t) => statusFilter === "all" || t.status === statusFilter)
+      .filter(
+        (t) =>
+          !q ||
+          [t.title, t.client_name, t.student_name, t.description, t.category]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(q))
+      )
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  }, [tasks, query, statusFilter]);
+
+  // Blijf op een geldige pagina als filters of realtime-updates de lijst verkleinen.
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, lastPage);
+  const sorted = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
@@ -56,8 +78,43 @@ export function AdminTasksPanel({
         <StatCard label="Uitbetaald (voltooid)" value={formatEuro(stats.payout)} />
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <h2>Alle taken</h2>
+        <div className="flex flex-wrap gap-3">
+          <div className="field mb-0 w-56">
+            <label htmlFor="task_search" className="sr-only">
+              Zoeken
+            </label>
+            <input
+              id="task_search"
+              type="search"
+              placeholder="Zoek op taak, klant of student"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="field mb-0 w-40">
+            <label htmlFor="task_status" className="sr-only">
+              Status
+            </label>
+            <select
+              id="task_status"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as "all" | TaskStatus);
+                setPage(1);
+              }}
+            >
+              <option value="all">Alle statussen</option>
+              <option value="open">Open</option>
+              <option value="accepted">Toegewezen</option>
+              <option value="done">Voltooid</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div className="overflow-x-auto rounded border border-line bg-card">
         <table className="w-full border-collapse text-sm">
@@ -77,7 +134,9 @@ export function AdminTasksPanel({
             {sorted.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-3.5 py-6 text-ink-soft">
-                  Nog geen taken op het platform.
+                  {tasks.length === 0
+                    ? "Nog geen taken op het platform."
+                    : "Geen taken gevonden voor deze zoekopdracht."}
                 </td>
               </tr>
             ) : (
@@ -140,6 +199,7 @@ export function AdminTasksPanel({
           </tbody>
         </table>
       </div>
+      <Pagination page={currentPage} total={filtered.length} onPage={setPage} />
     </div>
   );
 }

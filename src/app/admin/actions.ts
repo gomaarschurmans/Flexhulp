@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { SITE_URL } from "@/lib/mollie/client";
 import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
@@ -132,9 +133,33 @@ export async function adminDeleteTask(id: string) {
   revalidatePath("/admin");
 }
 
-export async function setClientBanned(id: string, banned: boolean) {
+export async function setUserBanned(id: string, banned: boolean) {
   const supabase = await createClient();
-  await supabase.from("profiles").update({ banned }).eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Niet ingelogd." };
+
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin") return { error: "Geen toegang." };
+
+  // De kolom `banned` is voor gewone gebruikers (en dus ook voor de sessie van
+  // de admin) niet schrijfbaar; na de rolcontrole hierboven gaat het via de
+  // service-role client.
+  const { data, error } = await createAdminClient()
+    .from("profiles")
+    .update({ banned })
+    .eq("id", id)
+    .neq("role", "admin")
+    .select("id");
+  if (error || !data?.length) {
+    return { error: "Wijzigen is mislukt. Probeer opnieuw." };
+  }
+
   revalidatePath("/admin");
 }
 

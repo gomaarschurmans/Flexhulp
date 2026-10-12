@@ -19,10 +19,13 @@ export async function applyToTask(taskId: string) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, bio")
+    .select("name, email, phone, bio, banned")
     .eq("id", user.id)
     .single();
   if (!profile) return;
+  if (profile.banned) {
+    return { error: "Je account is geblokkeerd. Neem contact op met Flexhulp." };
+  }
 
   const stats = await getStudentStats(user.id);
 
