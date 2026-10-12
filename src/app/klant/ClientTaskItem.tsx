@@ -12,7 +12,7 @@ import {
   type ReviewState,
 } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
-import { formatTimeRange, formatEuro } from "@/lib/utils";
+import { formatTimeRange, formatEuro, formatHours } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -161,7 +161,7 @@ export function ClientTaskItem({
         </span>
         <span>{task.location || "Locatie onbekend"}</span>
         <span>
-          {task.hours} u · {formatEuro(task.hours * task.rate_at_creation)}
+          {formatHours(task.hours)} u · {formatEuro(task.hours * task.rate_at_creation)}
         </span>
       </div>
 

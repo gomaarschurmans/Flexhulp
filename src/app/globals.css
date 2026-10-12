@@ -23,7 +23,7 @@
   .field input,
   .field select,
   .field textarea {
-    @apply w-full rounded-lg border border-line bg-[#FCFBF9] px-3 py-2.5 text-sm text-ink;
+    @apply w-full rounded-lg border border-line bg-[#FCFBF9] px-3 py-2.5 text-base text-ink sm:text-sm;
   }
 
   .btn {

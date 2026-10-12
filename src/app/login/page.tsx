@@ -64,7 +64,7 @@ export default function LoginPage() {
           {pending ? "Bezig..." : "Inloggen"}
         </button>
         <p className="mt-4 text-center text-sm">
-          <Link href="/forgot-password" className="text-ink-soft underline">
+          <Link href="/forgot-password" className="inline-block py-2 text-ink-soft underline">
             Wachtwoord vergeten?
           </Link>
         </p>
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-ink-soft">
         Nog geen account?{" "}
-        <Link href="/signup" className="font-semibold text-navy">
+        <Link href="/signup" className="inline-block py-2 font-semibold text-navy">
           Registreer
         </Link>
       </p>

@@ -126,7 +126,7 @@ export default function SignupPage() {
       </form>
       <p className="mt-6 text-center text-sm text-ink-soft">
         Al een account?{" "}
-        <Link href="/login" className="font-semibold text-navy">
+        <Link href="/login" className="inline-block py-2 font-semibold text-navy">
           Log in
         </Link>
       </p>

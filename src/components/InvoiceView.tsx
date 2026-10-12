@@ -1,6 +1,6 @@
 "use client";
 
-import { formatEuro, formatTimeRange } from "@/lib/utils";
+import { formatEuro, formatHours, formatTimeRange } from "@/lib/utils";
 import { SELLER, VAT_EXEMPTION_TEXT, formatInvoiceNumber } from "@/lib/invoicing/business";
 import type { Invoice } from "@/lib/types/domain";
 
@@ -67,7 +67,7 @@ export function InvoiceView({ invoice }: { invoice: Invoice }) {
                   <p className="mt-1 text-ink-soft">{invoice.description}</p>
                 )}
               </td>
-              <td className="py-3 text-right align-top">{invoice.hours}</td>
+              <td className="py-3 text-right align-top">{formatHours(invoice.hours)}</td>
               <td className="py-3 text-right align-top">{formatEuro(invoice.rate)}</td>
               <td className="py-3 text-right align-top">{formatEuro(invoice.total)}</td>
             </tr>

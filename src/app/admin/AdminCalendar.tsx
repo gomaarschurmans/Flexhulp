@@ -6,7 +6,7 @@ import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { markTaskDone } from "@/app/admin/actions";
-import { formatEuro } from "@/lib/utils";
+import { formatEuro, formatHours } from "@/lib/utils";
 import type { AvailabilitySlot, PaymentStatus, Task } from "@/lib/types/domain";
 
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
@@ -81,23 +81,25 @@ export function AdminCalendar({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
-          className="btn btn-ghost px-3 py-1.5 text-xs"
+          className="btn btn-ghost whitespace-nowrap px-3 py-2 text-xs"
+          aria-label="Vorige maand"
         >
-          ← Vorige
+          ← <span className="hidden sm:inline">Vorige</span>
         </button>
-        <span className="font-semibold">
+        <span className="text-center font-semibold">
           {MONTH_NAMES[month]} {year}
         </span>
         <button
           type="button"
           onClick={() => setCursor(new Date(year, month + 1, 1))}
-          className="btn btn-ghost px-3 py-1.5 text-xs"
+          className="btn btn-ghost whitespace-nowrap px-3 py-2 text-xs"
+          aria-label="Volgende maand"
         >
-          Volgende →
+          <span className="hidden sm:inline">Volgende</span> →
         </button>
       </div>
 
@@ -218,7 +220,7 @@ function DayDetail({
                 </div>
                 <p className="mb-1 text-ink-soft">
                   {t.time.slice(0, 5)} – {t.end_time.slice(0, 5)} ·{" "}
-                  {formatEuro(t.hours * t.rate_at_creation)} ({t.hours} u)
+                  {formatEuro(t.hours * t.rate_at_creation)} ({formatHours(t.hours)} u)
                 </p>
                 <p className="mb-1">
                   <strong>Klant:</strong> {t.client_name} · {t.client_email}

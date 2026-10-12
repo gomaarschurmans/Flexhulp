@@ -1,4 +1,4 @@
-import { formatDateTime, formatEuro, formatTimeRange } from "@/lib/utils";
+import { formatDateTime, formatEuro, formatHours, formatTimeRange } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import type { HourRequest, Invoice, Task } from "@/lib/types/domain";
 
@@ -42,7 +42,7 @@ export function taskCompletedEmail(task: Task) {
     html: wrapper(
       "Opdracht voltooid",
       `<p><strong>${task.student_name}</strong> heeft '<strong>${task.title}</strong>' als voltooid gemarkeerd.</p>
-       <p>Uitbetaling: <strong>${payout}</strong> (${task.hours} u × ${formatEuro(task.rate_at_creation)})</p>`
+       <p>Uitbetaling: <strong>${payout}</strong> (${formatHours(task.hours)} u × ${formatEuro(task.rate_at_creation)})</p>`
     ),
   };
 }
@@ -89,7 +89,7 @@ export function paymentRequestEmail(
       "Je taak is voltooid",
       `<p>Bedankt! <strong>${task.category}</strong> op
        <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> is uitgevoerd.</p>
-       <p>Te betalen: <strong>${amount}</strong> (${task.hours} u × ${formatEuro(task.rate_at_creation)})</p>
+       <p>Te betalen: <strong>${amount}</strong> (${formatHours(task.hours)} u × ${formatEuro(task.rate_at_creation)})</p>
        ${invoice ? `<p>Factuur: <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong></p>` : ""}
        <p style="margin-top: 20px;">
          ${

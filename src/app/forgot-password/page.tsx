@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       <p className="mt-6 text-center text-sm text-ink-soft">
-        <Link href="/login" className="font-semibold text-navy">
+        <Link href="/login" className="inline-block py-2 font-semibold text-navy">
           Terug naar inloggen
         </Link>
       </p>

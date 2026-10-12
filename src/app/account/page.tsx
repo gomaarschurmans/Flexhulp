@@ -27,11 +27,11 @@ export default async function AccountPage() {
 
         <div className="card mb-6">
           <h2 className="mb-4 text-lg">Gegevens</h2>
-          <dl className="mb-4 grid grid-cols-[100px_1fr] gap-y-2 text-sm">
+          <dl className="mb-4 grid grid-cols-[100px_minmax(0,1fr)] gap-y-2 text-sm">
             <dt className="text-ink-soft">Naam</dt>
-            <dd>{profile.name}</dd>
+            <dd className="break-words">{profile.name}</dd>
             <dt className="text-ink-soft">E-mail</dt>
-            <dd>{profile.email}</dd>
+            <dd className="break-all">{profile.email}</dd>
           </dl>
           <ProfileForm
             phone={profile.phone}

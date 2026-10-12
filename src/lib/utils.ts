@@ -4,6 +4,11 @@ export function formatEuro(amount: number): string {
   return "€ " + amount.toFixed(2).replace(".", ",");
 }
 
+/** Uren met Nederlandse komma: 1,5 (en geen overbodige nullen: 2 i.p.v. 2,0). */
+export function formatHours(hours: number): string {
+  return String(Math.round(hours * 100) / 100).replace(".", ",");
+}
+
 export function sortAvailability(rows: AvailabilitySlot[]): AvailabilitySlot[] {
   return [...rows].sort((a, b) =>
     a.slot_date === b.slot_date

@@ -6,6 +6,7 @@ import { bookTimeRange, type BookSlotState } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
 import {
   formatEuro,
+  formatHours,
   formatDateTime,
   slotHours,
   computeFreeGaps,
@@ -125,7 +126,7 @@ export function CreateTaskForm({
       : 0;
   const preview =
     selectedWindow && hours > 0
-      ? `Geschatte vergoeding: ${formatEuro(hours * rate)} (${hours} u × ${formatEuro(rate)})`
+      ? `Geschatte vergoeding: ${formatEuro(hours * rate)} (${formatHours(hours)} u ×${formatEuro(rate)})`
       : "";
 
   return (

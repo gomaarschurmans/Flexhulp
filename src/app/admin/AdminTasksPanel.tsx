@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
 import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
-import { formatEuro } from "@/lib/utils";
+import { formatEuro, formatHours } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import type { InvoiceSummary, PaymentStatus, Task, TaskStatus } from "@/lib/types/domain";
 
@@ -145,7 +145,7 @@ export function AdminTasksPanel({
                   <td className="border-b border-line px-3.5 py-2.5">{t.title}</td>
                   <td className="border-b border-line px-3.5 py-2.5">{t.client_name}</td>
                   <td className="border-b border-line px-3.5 py-2.5">{t.student_name ?? "–"}</td>
-                  <td className="border-b border-line px-3.5 py-2.5">{t.hours}</td>
+                  <td className="border-b border-line px-3.5 py-2.5">{formatHours(t.hours)}</td>
                   <td className="border-b border-line px-3.5 py-2.5">
                     {formatEuro(t.hours * t.rate_at_creation)}
                   </td>

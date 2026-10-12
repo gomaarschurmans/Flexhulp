@@ -35,7 +35,7 @@ export function Navbar({ name, role }: { name: string; role: Role }) {
         <div className="flex items-center gap-3">
           <Link
             href="/account"
-            className="flex items-center gap-2 text-sm hover:underline"
+            className="flex items-center gap-2 py-2 text-sm hover:underline"
           >
             <span className={`h-2 w-2 rounded-full ${ROLE_DOT[role]}`} />
             {name} · {ROLE_LABEL[role]}

@@ -1,5 +1,5 @@
 import type { BoardTask, Task } from "@/lib/types/domain";
-import { formatEuro, formatTimeRange } from "@/lib/utils";
+import { formatEuro, formatHours, formatTimeRange } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 
@@ -42,7 +42,7 @@ export function BoardTaskCard({
         </span>
         <span>{task.city || "Gemeente onbekend"}</span>
         <span>
-          {task.hours} u · {formatEuro(task.hours * task.rate_at_creation)}
+          {formatHours(task.hours)} u · {formatEuro(task.hours * task.rate_at_creation)}
         </span>
       </div>
       <p className="mb-3 text-xs text-ink-soft">
@@ -117,7 +117,7 @@ export function AssignedTaskCard({
         </span>
         <span>{task.location || "Adres onbekend"}</span>
         <span>
-          {task.hours} u · {formatEuro(task.hours * task.rate_at_creation)}
+          {formatHours(task.hours)} u · {formatEuro(task.hours * task.rate_at_creation)}
         </span>
       </div>
       <p className="mb-3 text-sm text-ink-soft">
