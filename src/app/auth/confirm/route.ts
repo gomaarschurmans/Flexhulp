@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(`${origin}/`);
+      // Nieuwe gebruikers krijgen eerst een korte uitleg, per rol.
+      const isNewSignup = type === "signup" && profile?.role !== "admin";
+      return NextResponse.redirect(`${origin}${isNewSignup ? "/welkom" : "/"}`);
     }
   }
 
