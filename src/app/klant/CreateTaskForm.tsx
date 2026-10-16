@@ -306,7 +306,7 @@ export function CreateTaskForm({
             />
           </div>
           {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}
-          <Turnstile />
+          <Turnstile resetKey={state} />
           {state.error && (
             <p className="mb-3 text-sm text-danger">{state.error}</p>
           )}

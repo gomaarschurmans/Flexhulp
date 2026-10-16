@@ -74,7 +74,7 @@ export function RequestForm() {
               defaultValue={state.values?.description ?? ""}
             />
           </div>
-          <Turnstile />
+          <Turnstile resetKey={state} />
           {state.error && (
             <p className="mb-3 text-sm text-danger">{state.error}</p>
           )}

@@ -102,7 +102,7 @@ export default function SignupPage() {
         </div>
         <PasswordStrength password={password} />
 
-        <Turnstile />
+        <Turnstile resetKey={state} />
 
         <label className="mb-4 flex items-start gap-2 text-xs text-ink-soft">
           <input type="checkbox" name="accept_terms" required className="mt-0.5" />
