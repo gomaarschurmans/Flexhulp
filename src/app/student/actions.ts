@@ -19,12 +19,20 @@ export async function applyToTask(taskId: string) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, bio, banned")
+    .select("name, email, phone, bio, banned, traits, photo_status")
     .eq("id", user.id)
     .single();
   if (!profile) return;
   if (profile.banned) {
     return { error: "Je account is geblokkeerd. Neem contact op met Flexhulp." };
+  }
+  if (profile.photo_status !== "approved") {
+    return {
+      error:
+        profile.photo_status === "pending"
+          ? "Je foto wordt nog gecontroleerd. Je kan je aanmelden zodra ze goedgekeurd is."
+          : "Voeg eerst een goedgekeurde profielfoto toe op je accountpagina.",
+    };
   }
 
   // Via de service-role client: de student mag de volledige klus niet lezen.
@@ -65,6 +73,9 @@ export async function applyToTask(taskId: string) {
     student_jobs_done: stats.jobsDone,
     student_avg_rating: stats.avgRating,
     student_rating_count: stats.ratingCount,
+    student_has_photo: true,
+    student_traits: profile.traits ?? [],
+    student_reviews: stats.recentReviews,
   });
 
   if (error) {
@@ -162,4 +173,42 @@ export async function completeTask(id: string) {
     task.client_phone,
     `Flexhulp: '${task.title}' is voltooid. Uitbetaling: ${formatEuro(task.hours * task.rate_at_creation)}.`
   );
+}
+
+export type StudentReviewState = { error: string | null; saved?: boolean };
+
+/** De student beoordeelt de klant na een afgeronde klus (één keer, 1 tot 5 sterren). */
+export async function submitStudentReview(
+  taskId: string,
+  _prevState: StudentReviewState,
+  formData: FormData
+): Promise<StudentReviewState> {
+  const rating = Number(formData.get("rating"));
+  const comment = String(formData.get("comment") ?? "").trim().slice(0, 400);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return { error: "Kies een aantal sterren." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Je bent niet ingelogd." };
+
+  // De beoordeling wordt via de server geschreven (de database laat studenten
+  // dit veld niet rechtstreeks aanpassen), na controle van eigenaar en status.
+  const { data: updated, error } = await createAdminClient()
+    .from("tasks")
+    .update({ student_rating: rating, student_review_comment: comment || null })
+    .eq("id", taskId)
+    .eq("student_id", user.id)
+    .eq("status", "done")
+    .is("student_rating", null)
+    .select("id");
+  if (error || !updated?.length) {
+    return { error: "Beoordelen is niet gelukt. Misschien heb je deze klus al beoordeeld." };
+  }
+
+  revalidatePath("/student");
+  return { error: null, saved: true };
 }

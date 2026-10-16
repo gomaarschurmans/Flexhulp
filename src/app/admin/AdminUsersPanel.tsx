@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { setUserBanned } from "@/app/admin/actions";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { StudentAvatar } from "@/components/StudentAvatar";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
 import { formatEuro } from "@/lib/utils";
 import type { Profile, Task } from "@/lib/types/domain";
@@ -46,13 +47,14 @@ export function AdminUsersPanel({
   const stats = useMemo(() => {
     const map = new Map<
       string,
-      { count: number; ratings: number[]; toPay: number; paid: number }
+      { count: number; ratings: number[]; clientRatings: number[]; toPay: number; paid: number }
     >();
     for (const t of tasks) {
       const id = kind === "client" ? t.client_id : t.student_id;
       if (!id) continue;
       if (kind === "student" && t.status !== "done") continue;
-      const entry = map.get(id) ?? { count: 0, ratings: [], toPay: 0, paid: 0 };
+      const entry = map.get(id) ?? { count: 0, ratings: [], clientRatings: [], toPay: 0, paid: 0 };
+      if (kind === "client" && t.student_rating !== null) entry.clientRatings.push(t.student_rating);
       entry.count += 1;
       if (kind === "student") {
         const amount = t.hours * t.rate_at_creation;
@@ -137,7 +139,41 @@ export function AdminUsersPanel({
                     : null;
                 return (
                   <tr key={u.id}>
-                    <td className="border-b border-line px-3.5 py-2.5">{u.name}</td>
+                    <td className="border-b border-line px-3.5 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        {kind === "student" && (
+                          <StudentAvatar
+                            studentId={u.id}
+                            name={u.name}
+                            hasPhoto={Boolean(u.photo_path)}
+                            size={36}
+                            version={u.photo_updated_at}
+                          />
+                        )}
+                        <div>
+                          {u.name}
+                          {kind === "student" && (
+                            <span
+                              className={`block text-xs ${
+                                u.photo_status === "approved"
+                                  ? "text-teal"
+                                  : u.photo_status === "pending"
+                                    ? "text-amber-deep"
+                                    : "text-danger"
+                              }`}
+                            >
+                              {u.photo_status === "approved"
+                                ? "Foto goedgekeurd"
+                                : u.photo_status === "pending"
+                                  ? "Foto wacht op goedkeuring"
+                                  : u.photo_status === "rejected"
+                                    ? "Foto afgekeurd"
+                                    : "Nog geen foto"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td className="border-b border-line px-3.5 py-2.5">
                       {u.email}
                       {u.phone && (
@@ -147,6 +183,15 @@ export function AdminUsersPanel({
                     <td className="border-b border-line px-3.5 py-2.5">
                       {s?.count ?? 0}
                       {kind === "student" && (avg ? ` · ★ ${avg}` : " · nog geen score")}
+                      {kind === "client" && s && s.clientRatings.length > 0 && (
+                        <span className="block text-xs text-ink-soft">
+                          Beoordeeld door studenten: ★{" "}
+                          {(s.clientRatings.reduce((a, b) => a + b, 0) / s.clientRatings.length)
+                            .toFixed(1)
+                            .replace(".", ",")}{" "}
+                          ({s.clientRatings.length})
+                        </span>
+                      )}
                     </td>
                     {kind === "student" && (
                       <td className="border-b border-line px-3.5 py-2.5 text-xs">

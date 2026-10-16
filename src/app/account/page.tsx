@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/Navbar";
 import { DeleteAccountButton } from "@/app/account/DeleteAccountButton";
 import { ProfileForm } from "@/app/account/ProfileForm";
+import { PhotoUploader } from "@/app/account/PhotoUploader";
 import type { Role } from "@/lib/types/domain";
 
 export default async function AccountPage() {
@@ -14,7 +15,9 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, address, bio, role, notify_new_tasks")
+    .select(
+      "name, email, phone, address, bio, role, notify_new_tasks, traits, photo_status, photo_reject_reason, photo_updated_at"
+    )
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -24,6 +27,23 @@ export default async function AccountPage() {
       <Navbar name={profile.name} role={profile.role as Role} />
       <div className="mx-auto max-w-[640px] px-6 pb-20 pt-8">
         <h1 className="mb-6 text-2xl">Mijn account</h1>
+
+        {profile.role === "student" && (
+          <div className="card mb-6">
+            <h2 className="mb-1 text-lg">Profielfoto</h2>
+            <p className="mb-4 text-sm text-ink-soft">
+              Klanten zien je foto wanneer je je aanmeldt voor hun klus. Zo weten ze wie er
+              aan de deur komt.
+            </p>
+            <PhotoUploader
+              studentId={user.id}
+              name={profile.name}
+              status={profile.photo_status}
+              rejectReason={profile.photo_reject_reason}
+              version={profile.photo_updated_at}
+            />
+          </div>
+        )}
 
         <div className="card mb-6">
           <h2 className="mb-4 text-lg">Gegevens</h2>
@@ -37,6 +57,7 @@ export default async function AccountPage() {
             phone={profile.phone}
             address={profile.address}
             bio={profile.bio}
+            traits={profile.traits ?? []}
             notifyNewTasks={profile.notify_new_tasks}
             isStudent={profile.role === "student"}
           />

@@ -8,6 +8,7 @@ import {
 } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { StudentReviewForm } from "@/components/StudentReviewForm";
 
 type Action = () => Promise<void | { error?: string }>;
 
@@ -15,6 +16,7 @@ export function BoardTaskCard({
   task,
   applied,
   conflict = false,
+  canApply = true,
   onApply,
   onWithdraw,
 }: {
@@ -22,6 +24,8 @@ export function BoardTaskCard({
   applied: boolean;
   /** De student heeft op dat moment al een andere klus. */
   conflict?: boolean;
+  /** Enkel studenten met een goedgekeurde profielfoto kunnen zich aanmelden. */
+  canApply?: boolean;
   onApply: Action;
   onWithdraw: Action;
 }) {
@@ -51,6 +55,11 @@ export function BoardTaskCard({
         </span>
         <span>{task.city || "Gemeente onbekend"}</span>
         <span>
+          {task.client_rating_count > 0 && task.client_rating_avg !== null
+            ? `Klant: ★ ${Number(task.client_rating_avg).toFixed(1).replace(".", ",")} (${task.client_rating_count})`
+            : "Nieuwe klant"}
+        </span>
+        <span>
           {formatHours(task.hours)} u · {formatEuro(task.hours * task.rate_at_creation)}
         </span>
       </div>
@@ -74,6 +83,10 @@ export function BoardTaskCard({
               }}
             />
           </div>
+        ) : !canApply ? (
+          <span className="text-sm text-ink-soft">
+            Aanmelden kan zodra je profielfoto goedgekeurd is.
+          </span>
         ) : conflict ? (
           <span className="text-sm text-ink-soft">
             Je hebt op dat moment al een andere klus.
@@ -175,7 +188,7 @@ export function AssignedTaskCard({
           ) : (
             <p className="mb-1">Nog geen beoordeling van de klant.</p>
           )}
-          <p>
+          <p className="mb-1">
             {task.student_paid_at ? (
               <span className="font-semibold text-teal">
                 Uitbetaald op {new Date(task.student_paid_at).toLocaleDateString("nl-BE")}
@@ -184,7 +197,19 @@ export function AssignedTaskCard({
               "Uitbetaling volgt: je krijgt een mail zodra die verstuurd is."
             )}
           </p>
+          {task.student_rating !== null && (
+            <p>
+              Jouw beoordeling van de klant:{" "}
+              <span className="text-amber-deep">
+                {"★".repeat(task.student_rating)}
+                {"☆".repeat(5 - task.student_rating)}
+              </span>
+            </p>
+          )}
         </div>
+      )}
+      {task.status === "done" && task.student_rating === null && (
+        <StudentReviewForm taskId={task.id} />
       )}
     </div>
   );

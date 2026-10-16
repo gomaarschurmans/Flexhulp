@@ -10,6 +10,7 @@ import { AdminAvailabilityList } from "@/app/admin/AdminAvailabilityList";
 import { AdminCalendar } from "@/app/admin/AdminCalendar";
 import { AdminRevenueReport } from "@/app/admin/AdminRevenueReport";
 import { AdminUsersPanel } from "@/app/admin/AdminUsersPanel";
+import { AdminPhotoQueue } from "@/app/admin/AdminPhotoQueue";
 import { AdminRequestsPanel } from "@/app/admin/AdminRequestsPanel";
 import type { Profile } from "@/lib/types/domain";
 
@@ -48,6 +49,7 @@ export default async function AdminPage({
 
   const clients = (users ?? []).filter((u) => u.role === "client");
   const students = (users ?? []).filter((u) => u.role === "student");
+  const pendingPhotos = students.filter((s) => s.photo_status === "pending");
   const openRequests = (requests ?? []).filter((r) => r.status === "open").length;
 
   const planning = (
@@ -175,8 +177,13 @@ export default async function AdminPage({
           {
             id: "gebruikers",
             label: "Gebruikers",
+            badge: pendingPhotos.length,
             content: (
               <>
+                <h2 className="mb-4">Foto's ter goedkeuring</h2>
+                <div className="mb-10">
+                  <AdminPhotoQueue students={pendingPhotos} />
+                </div>
                 <h2 className="mb-4">Klanten</h2>
                 <div className="mb-10">
                   <AdminUsersPanel kind="client" users={clients} tasks={tasks ?? []} />

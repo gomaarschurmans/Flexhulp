@@ -24,11 +24,11 @@ const STEPS = {
   student: () => [
     {
       title: "Maak je profiel af",
-      text: "Vertel kort iets over jezelf. Klanten zien dit bij je aanmelding en kiezen sneller een student die ze kennen.",
+      text: "Voeg een duidelijke, verzorgde foto toe en vertel kort wie je bent. Dit is verplicht: klanten kiezen hun student op basis van je foto en voorstelling.",
     },
     {
       title: "Meld je aan voor klussen",
-      text: "Op je overzicht staan alle openstaande klussen met plaats, tijd en vergoeding. Klik op “Ik wil dit doen” bij wat bij je past.",
+      text: "Zodra we je foto hebben goedgekeurd (meestal binnen een dag), kan je je aanmelden voor klussen met plaats, tijd en vergoeding. Klik op “Ik wil dit doen” bij wat bij je past.",
     },
     {
       title: "Wacht op de keuze van de klant",
@@ -103,14 +103,9 @@ export default async function WelkomPage() {
         </ol>
 
         {isStudent ? (
-          <div className="flex flex-col gap-2">
-            <Link href="/account" className="btn btn-navy w-full text-center">
-              Profiel aanvullen
-            </Link>
-            <Link href="/student" className="btn btn-ghost w-full text-center">
-              Eerst de klussen bekijken
-            </Link>
-          </div>
+          <Link href="/profiel-afmaken" className="btn btn-navy block w-full text-center">
+            Profiel aanvullen
+          </Link>
         ) : (
           <Link href="/klant" className="btn btn-navy block w-full text-center">
             Mijn eerste taak plaatsen

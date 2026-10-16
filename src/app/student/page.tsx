@@ -16,7 +16,11 @@ export default async function StudentPage() {
         .order("created_at", { ascending: false }),
       supabase.from("task_board").select("*").order("created_at"),
       supabase.from("task_applications").select("*"),
-      supabase.from("profiles").select("bio").eq("id", user!.id).single(),
+      supabase
+        .from("profiles")
+        .select("photo_status, photo_reject_reason")
+        .eq("id", user!.id)
+        .single(),
     ]);
 
   return (
@@ -25,7 +29,8 @@ export default async function StudentPage() {
       initialBoard={board ?? []}
       initialApplications={applications ?? []}
       userId={user!.id}
-      hasBio={Boolean(profile?.bio)}
+      photoStatus={profile?.photo_status ?? null}
+      photoRejectReason={profile?.photo_reject_reason ?? null}
     />
   );
 }

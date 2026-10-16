@@ -14,6 +14,11 @@ create table public.profiles (
   role text not null default 'client' check (role in ('client','student','admin')),
   banned boolean not null default false,
   notify_new_tasks boolean not null default true,
+  photo_path text,
+  photo_status text check (photo_status in ('pending', 'approved', 'rejected')),
+  photo_reject_reason text,
+  photo_updated_at timestamptz,
+  traits text[] not null default '{}',
   created_at timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
@@ -90,6 +95,8 @@ create table public.tasks (
   reminder_sent_at timestamptz,
   completion_reminder_sent_at timestamptz,
   student_paid_at timestamptz,
+  student_rating smallint check (student_rating between 1 and 5),
+  student_review_comment text,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz
@@ -138,7 +145,7 @@ create trigger on_auth_user_created
 -- Admin toekennen kan alleen via de Dashboard Table Editor (draait als postgres,
 -- omzeilt deze grants en RLS).
 revoke update on public.profiles from authenticated;
-grant update (name, phone, address, bio, notify_new_tasks) on public.profiles to authenticated;
+grant update (name, phone, address, bio, notify_new_tasks, traits) on public.profiles to authenticated;
 
 -- =========================================================
 -- Trigger: bewaakt geldige status-overgangen van een taak
@@ -169,6 +176,8 @@ begin
          or new.window_id is distinct from old.window_id
          or new.rating is distinct from old.rating
          or new.review_comment is distinct from old.review_comment
+         or new.student_rating is distinct from old.student_rating
+         or new.student_review_comment is distinct from old.student_review_comment
          or new.payment_status is distinct from old.payment_status
          or new.mollie_payment_id is distinct from old.mollie_payment_id
          or new.paid_at is distinct from old.paid_at
@@ -185,6 +194,8 @@ begin
          or new.category <> old.category or new.description <> old.description
          or new.location <> old.location or new.extra_info <> old.extra_info
          or new.student_id is distinct from old.student_id
+         or new.student_rating is distinct from old.student_rating
+         or new.student_review_comment is distinct from old.student_review_comment
          or new.payment_status is distinct from old.payment_status
          or new.mollie_payment_id is distinct from old.mollie_payment_id
          or new.paid_at is distinct from old.paid_at
@@ -212,6 +223,8 @@ begin
        or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
        or new.rating is distinct from old.rating
        or new.review_comment is distinct from old.review_comment
+       or new.student_rating is distinct from old.student_rating
+       or new.student_review_comment is distinct from old.student_review_comment
        or new.payment_status is distinct from old.payment_status
        or new.mollie_payment_id is distinct from old.mollie_payment_id
        or new.paid_at is distinct from old.paid_at
@@ -482,7 +495,9 @@ create table public.task_board (
   end_time time not null,
   hours numeric(5,2) not null,
   rate_at_creation numeric(10,2) not null,
-  created_at timestamptz not null
+  created_at timestamptz not null,
+  client_rating_avg numeric(3,2),
+  client_rating_count integer not null default 0
 );
 alter table public.task_board enable row level security;
 alter publication supabase_realtime add table public.task_board;
@@ -492,6 +507,9 @@ create policy "task_board_select_student_admin" on public.task_board for select
 
 create or replace function public.sync_task_projections()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_avg numeric(3, 2);
+  v_cnt integer;
 begin
   if tg_op = 'DELETE' then
     delete from public.task_busy where id = old.id;
@@ -505,18 +523,42 @@ begin
     set date = excluded.date, time = excluded.time, end_time = excluded.end_time;
 
   if new.status = 'open' then
+    select round(avg(student_rating)::numeric, 2), count(student_rating)
+      into v_avg, v_cnt
+    from public.tasks
+    where client_id = new.client_id and student_rating is not null;
+
     insert into public.task_board
-      (id, category, description, city, date, time, end_time, hours, rate_at_creation, created_at)
+      (id, category, description, city, date, time, end_time, hours,
+       rate_at_creation, created_at, client_rating_avg, client_rating_count)
     values
       (new.id, new.category, new.description, new.city, new.date, new.time,
-       new.end_time, new.hours, new.rate_at_creation, new.created_at)
+       new.end_time, new.hours, new.rate_at_creation, new.created_at,
+       v_avg, coalesce(v_cnt, 0))
     on conflict (id) do update
       set category = excluded.category, description = excluded.description,
           city = excluded.city, date = excluded.date, time = excluded.time,
           end_time = excluded.end_time, hours = excluded.hours,
-          rate_at_creation = excluded.rate_at_creation;
+          rate_at_creation = excluded.rate_at_creation,
+          client_rating_avg = excluded.client_rating_avg,
+          client_rating_count = excluded.client_rating_count;
   else
     delete from public.task_board where id = new.id;
+  end if;
+
+  -- Nieuwe beoordeling van een klant: ook zijn andere open klussen verversen.
+  if tg_op = 'UPDATE' and new.client_id is not null
+     and new.student_rating is distinct from old.student_rating then
+    select round(avg(student_rating)::numeric, 2), count(student_rating)
+      into v_avg, v_cnt
+    from public.tasks
+    where client_id = new.client_id and student_rating is not null;
+
+    update public.task_board
+      set client_rating_avg = v_avg, client_rating_count = coalesce(v_cnt, 0)
+    where id in (
+      select id from public.tasks where client_id = new.client_id and status = 'open'
+    );
   end if;
 
   return new;
@@ -544,6 +586,10 @@ create table public.task_applications (
   student_jobs_done integer not null default 0,
   student_avg_rating numeric(3,2),
   student_rating_count integer not null default 0,
+  -- Zie migration_v14_student_profile_photo.sql
+  student_has_photo boolean not null default false,
+  student_traits text[] not null default '{}',
+  student_reviews jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   unique (task_id, student_id)
 );
@@ -618,3 +664,8 @@ create policy "invoices_select_own_client" on public.invoices for select
 
 create policy "invoices_select_admin" on public.invoices for select
   to authenticated using (public.get_my_role() = 'admin');
+
+-- Privé opslag voor studentenfoto's: bewust zonder policies (enkel via service role).
+insert into storage.buckets (id, name, public)
+values ('student-photos', 'student-photos', false)
+on conflict (id) do nothing;

@@ -165,6 +165,9 @@ in `supabase/`, in volgorde:
 15. `migration_v13_workflow.sql` — afronden pas vanaf de start, uitbetalingen
     aan studenten bijhouden, meldingen over nieuwe klussen (met opt-out) en
     een herinnering bij vergeten afrondingen
+16. `migration_v14_student_profile_photo.sql` — verplicht studentenprofiel met
+    foto (door admin goedgekeurd) en eigenschappen, en een beoordeling van de
+    student over de klant. Maakt ook de privé opslagbucket `student-photos` aan
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

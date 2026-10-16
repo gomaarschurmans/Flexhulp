@@ -9,20 +9,22 @@ import { AssignedTaskCard, BoardTaskCard } from "@/components/TaskCard";
 import { applyToTask, withdrawApplication, completeTask } from "@/app/student/actions";
 import { CATEGORIES } from "@/lib/constants";
 import { formatEuro, hasStarted, tasksOverlap } from "@/lib/utils";
-import type { BoardTask, Task, TaskApplication } from "@/lib/types/domain";
+import type { BoardTask, PhotoStatus, Task, TaskApplication } from "@/lib/types/domain";
 
 export function StudentTaskLists({
   initialAssigned,
   initialBoard,
   initialApplications,
   userId,
-  hasBio,
+  photoStatus,
+  photoRejectReason,
 }: {
   initialAssigned: Task[];
   initialBoard: BoardTask[];
   initialApplications: TaskApplication[];
   userId: string;
-  hasBio: boolean;
+  photoStatus: PhotoStatus | null;
+  photoRejectReason: string | null;
 }) {
   const assigned = useRealtimeTasks(initialAssigned);
   const board = useRealtimeRows<BoardTask>("task_board", initialBoard);
@@ -92,13 +94,21 @@ export function StudentTaskLists({
         klant kiest zelf wie de taak toegewezen krijgt.
       </p>
 
-      {!hasBio && (
-        <div className="mb-5 rounded border border-teal/30 bg-teal-soft px-4 py-3 text-sm text-teal">
-          Klanten kiezen sneller een student met een profiel.{" "}
+      {photoStatus === "pending" && (
+        <div className="mb-5 rounded border border-amber/30 bg-[#FCEFD8] px-4 py-3 text-sm text-amber-deep">
+          Je profielfoto wordt gecontroleerd. Zodra ze goedgekeurd is, kan je je aanmelden voor
+          klussen. Je krijgt een mail.
+        </div>
+      )}
+      {photoStatus !== "pending" && photoStatus !== "approved" && (
+        <div className="mb-5 rounded border border-danger/30 bg-[#FBEAE6] px-4 py-3 text-sm text-danger">
+          {photoStatus === "rejected" && photoRejectReason
+            ? `Je foto werd niet goedgekeurd: ${photoRejectReason}. `
+            : "Je hebt nog geen profielfoto. "}
           <Link href="/account" className="font-semibold underline">
-            Schrijf een korte tekst over jezelf
+            Voeg een foto toe
           </Link>{" "}
-          voor je je aanmeldt.
+          om je te kunnen aanmelden.
         </div>
       )}
 
@@ -130,6 +140,7 @@ export function StudentTaskLists({
               task={task}
               applied={myApplicationTaskIds.has(task.id)}
               conflict={myAccepted.some((m) => tasksOverlap(m, task))}
+              canApply={photoStatus === "approved"}
               onApply={applyToTask.bind(null, task.id)}
               onWithdraw={withdrawApplication.bind(null, task.id)}
             />

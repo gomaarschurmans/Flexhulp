@@ -151,7 +151,18 @@ export function AdminTasksPanel({
               sorted.map((t) => (
                 <tr key={t.id}>
                   <td className="border-b border-line px-3.5 py-2.5">{t.title}</td>
-                  <td className="border-b border-line px-3.5 py-2.5">{t.client_name}</td>
+                  <td className="border-b border-line px-3.5 py-2.5">
+                    {t.client_name}
+                    {t.student_rating !== null && (
+                      <span
+                        className="block text-xs text-ink-soft"
+                        title={t.student_review_comment ?? "Geen opmerking"}
+                      >
+                        Student gaf ★ {t.student_rating}
+                        {t.student_review_comment ? ` · “${t.student_review_comment}”` : ""}
+                      </span>
+                    )}
+                  </td>
                   <td className="border-b border-line px-3.5 py-2.5">{t.student_name ?? "–"}</td>
                   <td className="border-b border-line px-3.5 py-2.5">{formatHours(t.hours)}</td>
                   <td className="border-b border-line px-3.5 py-2.5">

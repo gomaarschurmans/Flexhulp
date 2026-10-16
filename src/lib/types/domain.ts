@@ -10,6 +10,13 @@ export type PaymentStatus =
   | "expired"
   | "canceled";
 
+export type PhotoStatus = "pending" | "approved" | "rejected";
+
+export interface StudentReview {
+  rating: number;
+  comment: string;
+}
+
 export interface Profile {
   id: string;
   email: string;
@@ -20,6 +27,11 @@ export interface Profile {
   role: Role;
   banned: boolean;
   notify_new_tasks: boolean;
+  photo_path: string | null;
+  photo_status: PhotoStatus | null;
+  photo_reject_reason: string | null;
+  photo_updated_at: string | null;
+  traits: string[];
   created_at: string;
 }
 
@@ -53,6 +65,8 @@ export interface Task {
   reminder_sent_at: string | null;
   completion_reminder_sent_at: string | null;
   student_paid_at: string | null;
+  student_rating: number | null;
+  student_review_comment: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
@@ -76,6 +90,8 @@ export interface BoardTask {
   end_time: string;
   hours: number;
   rate_at_creation: number;
+  client_rating_avg: number | null;
+  client_rating_count: number;
   created_at: string;
 }
 
@@ -114,6 +130,9 @@ export interface TaskApplication {
   student_jobs_done: number;
   student_avg_rating: number | null;
   student_rating_count: number;
+  student_has_photo: boolean;
+  student_traits: string[];
+  student_reviews: StudentReview[];
   created_at: string;
 }
 

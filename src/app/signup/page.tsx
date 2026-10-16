@@ -57,6 +57,12 @@ export default function SignupPage() {
           </button>
         </div>
         <input type="hidden" name="role" value={role} />
+        {role === "student" && (
+          <p className="mb-4 rounded border border-teal/30 bg-teal-soft px-3 py-2.5 text-xs text-teal">
+            Na het bevestigen van je e-mail voeg je een duidelijke foto en een korte voorstelling
+            toe. Klanten kiezen hun student op basis daarvan.
+          </p>
+        )}
 
         <div className="field mb-4">
           <label htmlFor="name">Jouw naam</label>

@@ -300,3 +300,40 @@ export function studentPaidEmail(task: Task) {
     ),
   };
 }
+
+export function newPhotoAdminEmail(studentName: string) {
+  return {
+    subject: `Nieuwe profielfoto om goed te keuren: ${studentName}`,
+    html: wrapper(
+      "Een student wacht op goedkeuring",
+      `<p><strong>${esc(studentName)}</strong> heeft een profielfoto geüpload. De student kan zich pas
+       aanmelden voor klussen als je de foto goedkeurt.</p>
+       ${button(`${SITE_LINK}/admin?tab=gebruikers`, "Foto bekijken")}`
+    ),
+  };
+}
+
+export function photoApprovedEmail(name: string) {
+  return {
+    subject: "Je profielfoto is goedgekeurd",
+    html: wrapper(
+      "Je profiel is klaar",
+      `<p>Hoi ${esc(name)}, je profielfoto is goedgekeurd. Je kan je nu aanmelden voor klussen.</p>
+       ${button(`${SITE_LINK}/student`, "Bekijk de klussen")}`
+    ),
+  };
+}
+
+export function photoRejectedEmail(name: string, reason: string) {
+  return {
+    subject: "Je profielfoto moet aangepast worden",
+    html: wrapper(
+      "Kies een andere foto",
+      `<p>Hoi ${esc(name)}, we konden je profielfoto niet goedkeuren.</p>
+       <p><strong>Reden:</strong> ${esc(reason)}</p>
+       <p>Klanten kiezen hun student mede op basis van de foto, dus kies een recente, verzorgde foto
+       waarop je gezicht duidelijk zichtbaar is (geen zonnebril of pet, alleen jezelf).</p>
+       ${button(`${SITE_LINK}/account`, "Nieuwe foto kiezen")}`
+    ),
+  };
+}

@@ -47,6 +47,14 @@ export default function PrivacyPage() {
         <ul className="mb-4 list-disc pl-5">
           <li>Naam, e-mailadres en (optioneel) telefoonnummer bij registratie</li>
           <li>Locatie en beschrijving van de klus die je boekt</li>
+          <li>
+            Studenten: een profielfoto, een korte voorstelling en gekozen
+            eigenschappen, en de beoordelingen die je van klanten krijgt
+          </li>
+          <li>
+            Klanten: de beoordelingen die studenten over jou geven (een score
+            en een eventuele opmerking, enkel zichtbaar voor Flexhulp)
+          </li>
           <li>Communicatie tussen jou en Flexhulp</li>
           <li>Technische gegevens zoals IP-adres, via onze hostingprovider</li>
         </ul>
@@ -65,6 +73,16 @@ export default function PrivacyPage() {
         </p>
 
         <h2 className="mb-2 mt-8 text-lg">4. Met wie delen we gegevens</h2>
+        <p className="mb-4">
+          <strong>Met andere gebruikers van het platform:</strong> wanneer een
+          student zich aanmeldt voor een klus, ziet de klant zijn of haar naam,
+          profielfoto, voorstelling, eigenschappen, aantal voltooide klussen,
+          gemiddelde score en recente opmerkingen van eerdere klanten. Een foto
+          is pas zichtbaar na goedkeuring door Flexhulp en enkel voor klanten
+          bij wie de student zich heeft aangemeld of aan wie de student
+          toegewezen is. Pas als de klant een student kiest, ziet die student het
+          volledige adres en de contactgegevens van de klant.
+        </p>
         <p className="mb-4">
           We werken met een beperkt aantal zorgvuldig gekozen
           dienstverleners die ons platform draaiende houden:

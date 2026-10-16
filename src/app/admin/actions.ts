@@ -7,7 +7,12 @@ import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { SITE_URL } from "@/lib/mollie/client";
 import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
-import { paymentRequestEmail, studentPaidEmail } from "@/lib/resend/templates";
+import {
+  paymentRequestEmail,
+  studentPaidEmail,
+  photoApprovedEmail,
+  photoRejectedEmail,
+} from "@/lib/resend/templates";
 import type { Task } from "@/lib/types/domain";
 
 export async function updateRate(formData: FormData) {
@@ -163,6 +168,58 @@ export async function setStudentPaid(id: string, paid: boolean) {
     } catch (e) {
       console.error("Uitbetalingsmail versturen mislukt", e);
     }
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/student");
+}
+
+/** Keurt de profielfoto van een student goed of af (met reden). De student krijgt een mail. */
+export async function reviewPhoto(studentId: string, approve: boolean, reason: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Niet ingelogd." };
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role !== "admin") return { error: "Geen toegang." };
+
+  const cleanReason = reason.trim().slice(0, 300);
+  if (!approve && !cleanReason) return { error: "Geef een reden op, zodat de student weet wat er moet veranderen." };
+
+  const admin = createAdminClient();
+  const { data: student, error } = await admin
+    .from("profiles")
+    .update({
+      photo_status: approve ? "approved" : "rejected",
+      photo_reject_reason: approve ? null : cleanReason,
+    })
+    .eq("id", studentId)
+    .eq("role", "student")
+    .not("photo_path", "is", null)
+    .select("name, email")
+    .single();
+  if (error || !student) return { error: "Bijwerken is mislukt. Probeer opnieuw." };
+
+  // Lopende aanmeldingen tonen de foto enkel zolang ze goedgekeurd is.
+  await admin
+    .from("task_applications")
+    .update({ student_has_photo: approve })
+    .eq("student_id", studentId);
+
+  try {
+    const mail = approve
+      ? photoApprovedEmail(student.name)
+      : photoRejectedEmail(student.name, cleanReason);
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: student.email,
+      subject: mail.subject,
+      html: mail.html,
+    });
+  } catch (e) {
+    console.error("Mail over fotobeoordeling versturen mislukt", e);
   }
 
   revalidatePath("/admin");
