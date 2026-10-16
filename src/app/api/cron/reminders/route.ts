@@ -5,6 +5,8 @@ import {
   reminderClientEmail,
   reminderStudentEmail,
   reminderAdminEmail,
+  completionReminderStudentEmail,
+  overdueAdminEmail,
 } from "@/lib/resend/templates";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
 import { brusselsDateString, formatTimeRange } from "@/lib/utils";
@@ -106,5 +108,55 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ date: tomorrow, reminded: handled.length });
+  // Vergeten afrondingen: toegewezen klussen van vóór vandaag die nog niet als
+  // voltooid staan. De student krijgt één keer een herinnering, de admin een overzicht.
+  const today = brusselsDateString(new Date());
+  const { data: overdue } = await admin
+    .from("tasks")
+    .select("*")
+    .eq("status", "accepted")
+    .lt("date", today)
+    .is("completion_reminder_sent_at", null)
+    .returns<Task[]>();
+
+  const nagged: Task[] = [];
+  for (const task of overdue ?? []) {
+    if (!task.student_id || !task.student_email) continue;
+    try {
+      const mail = completionReminderStudentEmail(task);
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: task.student_email,
+        subject: mail.subject,
+        html: mail.html,
+      });
+      await admin
+        .from("tasks")
+        .update({ completion_reminder_sent_at: new Date().toISOString() })
+        .eq("id", task.id);
+      nagged.push(task);
+    } catch (e) {
+      console.error(`Afrondherinnering voor taak ${task.id} mislukt`, e);
+    }
+  }
+
+  if (nagged.length > 0) {
+    try {
+      const summary = overdueAdminEmail(nagged);
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: ADMIN_NOTIFICATION_EMAIL,
+        subject: summary.subject,
+        html: summary.html,
+      });
+    } catch (e) {
+      console.error("Overzicht van niet-afgeronde klussen versturen mislukt", e);
+    }
+  }
+
+  return NextResponse.json({
+    date: tomorrow,
+    reminded: handled.length,
+    overdue: nagged.length,
+  });
 }

@@ -10,11 +10,13 @@ export function ProfileForm({
   phone,
   address,
   bio,
+  notifyNewTasks,
   isStudent,
 }: {
   phone: string | null;
   address: string | null;
   bio: string | null;
+  notifyNewTasks: boolean;
   isStudent: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
@@ -68,6 +70,22 @@ export function ProfileForm({
             gemiddelde score, wanneer je je aanmeldt voor een klus.
           </p>
         </div>
+      )}
+      {isStudent && (
+        <label className="mb-4 flex cursor-pointer items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="notify_new_tasks"
+            defaultChecked={state.values?.notify ?? notifyNewTasks}
+            className="mt-1"
+          />
+          <span>
+            Mail mij wanneer er een nieuwe klus beschikbaar is.
+            <span className="block text-xs text-ink-soft">
+              Je krijgt enkel de gegevens te zien die ook op het prikbord staan.
+            </span>
+          </span>
+        </label>
       )}
       {state.error && <p className="mb-2 text-sm text-danger">{state.error}</p>}
       <button

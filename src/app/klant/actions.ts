@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CATEGORIES } from "@/lib/constants";
@@ -12,11 +13,14 @@ import {
   taskCancelledAdminEmail,
   newRequestAdminEmail,
   studentChosenEmail,
+  notChosenEmail,
+  taskRemovedApplicantEmail,
 } from "@/lib/resend/templates";
+import { notifyStudentsOfNewTask, sendMails } from "@/lib/notifications";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSms, ADMIN_NOTIFICATION_PHONE } from "@/lib/sms";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
-import { formatTimeRange, brusselsLocalToDate } from "@/lib/utils";
+import { formatTimeRange, hasStarted, tasksOverlap, brusselsLocalToDate } from "@/lib/utils";
 import type { HourRequest, Task } from "@/lib/types/domain";
 
 const HALF_HOUR = /^\d{2}:(00|30)$/;
@@ -110,6 +114,9 @@ export async function bookTimeRange(
     `Nieuwe boeking: ${task.category} op ${formatTimeRange(task.date, task.time, task.end_time)} — ${task.client_name}`
   );
 
+  // Na het antwoord aan de klant: studenten met meldingen aan verwittigen.
+  after(() => notifyStudentsOfNewTask(task));
+
   revalidatePath("/klant");
   return { error: null, success: true };
 }
@@ -125,22 +132,38 @@ export async function cancelTask(id: string) {
     .single<Task>();
   if (!task) return { error: "Deze boeking kan niet meer ingetrokken worden." };
 
-  const { data: settings } = await supabase
-    .from("platform_settings")
-    .select("cancellation_notice_hours")
-    .eq("id", 1)
-    .single();
-  const noticeHours = settings?.cancellation_notice_hours ?? 24;
+  // Een klus die al voorbij is zonder gekozen student mag de klant gewoon opruimen.
+  if (!hasStarted(task)) {
+    const { data: settings } = await supabase
+      .from("platform_settings")
+      .select("cancellation_notice_hours")
+      .eq("id", 1)
+      .single();
+    const noticeHours = settings?.cancellation_notice_hours ?? 24;
 
-  const taskStart = brusselsLocalToDate(task.date, task.time);
-  const deadline = new Date(taskStart.getTime() - noticeHours * 60 * 60 * 1000);
-  if (new Date() > deadline) {
-    return {
-      error: `Je kan deze boeking niet meer intrekken. Dat kan enkel tot ${noticeHours} uur op voorhand.`,
-    };
+    const taskStart = brusselsLocalToDate(task.date, task.time);
+    const deadline = new Date(taskStart.getTime() - noticeHours * 60 * 60 * 1000);
+    if (new Date() > deadline) {
+      return {
+        error: `Je kan deze boeking niet meer intrekken. Dat kan enkel tot ${noticeHours} uur op voorhand.`,
+      };
+    }
   }
 
+  // Aangemelde studenten verdwijnen mee met de klus (cascade): eerst hun mailadres ophalen.
+  const { data: applicants } = await supabase
+    .from("task_applications")
+    .select("student_email")
+    .eq("task_id", id);
+
   await supabase.from("tasks").delete().eq("id", id).eq("status", "open");
+
+  if (!hasStarted(task) && applicants && applicants.length > 0) {
+    const { subject, html } = taskRemovedApplicantEmail(task);
+    after(() =>
+      sendMails(applicants.map((a) => ({ to: a.student_email, subject, html })))
+    );
+  }
 
   try {
     const { subject, html } = taskCancelledAdminEmail(task);
@@ -206,6 +229,9 @@ export async function acceptStudent(taskId: string, studentId: string) {
     .eq("status", "open")
     .single<Task>();
   if (!task) return { error: "Deze klus is al toegewezen of bestaat niet meer." };
+  if (hasStarted(task)) {
+    return { error: "Deze klus is al begonnen. Je kan geen student meer kiezen." };
+  }
 
   const { data: application } = await supabase
     .from("task_applications")
@@ -218,6 +244,25 @@ export async function acceptStudent(taskId: string, studentId: string) {
   }
 
   const admin = createAdminClient();
+
+  const { data: studentProfile } = await admin
+    .from("profiles")
+    .select("banned")
+    .eq("id", studentId)
+    .maybeSingle();
+  if (!studentProfile || studentProfile.banned) {
+    return { error: "Deze student kan op dit moment geen klussen uitvoeren." };
+  }
+
+  const { data: busy } = await admin
+    .from("tasks")
+    .select("date, time, end_time")
+    .eq("student_id", studentId)
+    .eq("status", "accepted");
+  if ((busy ?? []).some((t) => tasksOverlap(t, task))) {
+    return { error: "Deze student is op dat moment al aan een andere klus toegewezen." };
+  }
+
   const { data: updated, error } = await admin
     .from("tasks")
     .update({
@@ -250,6 +295,19 @@ export async function acceptStudent(taskId: string, studentId: string) {
     application.student_phone,
     `Flexhulp: je bent gekozen voor '${updated.title}' op ${formatTimeRange(updated.date, updated.time, updated.end_time)}.`
   );
+
+  // De andere kandidaten horen dat de klus vergeven is.
+  const { data: others } = await supabase
+    .from("task_applications")
+    .select("student_email")
+    .eq("task_id", taskId)
+    .neq("student_id", studentId);
+  if (others && others.length > 0) {
+    const mail = notChosenEmail(updated);
+    after(() =>
+      sendMails(others.map((o) => ({ to: o.student_email, subject: mail.subject, html: mail.html })))
+    );
+  }
 
   revalidatePath("/klant");
   revalidatePath("/student");

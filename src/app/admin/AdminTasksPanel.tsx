@@ -6,8 +6,8 @@ import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
-import { adminDeleteTask, markTaskDone } from "@/app/admin/actions";
-import { formatEuro, formatHours } from "@/lib/utils";
+import { adminDeleteTask, markTaskDone, setStudentPaid } from "@/app/admin/actions";
+import { formatEuro, formatHours, isExpiredOpen } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import type { InvoiceSummary, PaymentStatus, Task, TaskStatus } from "@/lib/types/domain";
 
@@ -39,21 +39,28 @@ export function AdminTasksPanel({
   const tasks = useRealtimeTasks(initialTasks);
 
   const stats = useMemo(() => {
-    const open = tasks.filter((t) => t.status === "open").length;
+    const open = tasks.filter((t) => t.status === "open" && !isExpiredOpen(t)).length;
     const accepted = tasks.filter((t) => t.status === "accepted").length;
     const done = tasks.filter((t) => t.status === "done");
-    const payout = done.reduce((sum, t) => sum + t.hours * t.rate_at_creation, 0);
-    return { open, accepted, done: done.length, payout };
+    const toPay = done
+      .filter((t) => t.student_id && !t.student_paid_at)
+      .reduce((sum, t) => sum + t.hours * t.rate_at_creation, 0);
+    return { open, accepted, done: done.length, toPay };
   }, [tasks]);
 
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "expired" | TaskStatus>("all");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return [...tasks]
-      .filter((t) => statusFilter === "all" || t.status === statusFilter)
+      .filter((t) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "expired") return isExpiredOpen(t);
+        if (statusFilter === "open") return t.status === "open" && !isExpiredOpen(t);
+        return t.status === statusFilter;
+      })
       .filter(
         (t) =>
           !q ||
@@ -75,7 +82,7 @@ export function AdminTasksPanel({
         <StatCard label="Open taken" value={String(stats.open)} />
         <StatCard label="Toegewezen" value={String(stats.accepted)} />
         <StatCard label="Voltooid" value={String(stats.done)} />
-        <StatCard label="Uitbetaald (voltooid)" value={formatEuro(stats.payout)} />
+        <StatCard label="Nog uit te betalen aan studenten" value={formatEuro(stats.toPay)} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -104,7 +111,7 @@ export function AdminTasksPanel({
               id="task_status"
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value as "all" | TaskStatus);
+                setStatusFilter(e.target.value as "all" | "expired" | TaskStatus);
                 setPage(1);
               }}
             >
@@ -112,6 +119,7 @@ export function AdminTasksPanel({
               <option value="open">Open</option>
               <option value="accepted">Toegewezen</option>
               <option value="done">Voltooid</option>
+              <option value="expired">Verlopen</option>
             </select>
           </div>
         </div>
@@ -148,9 +156,24 @@ export function AdminTasksPanel({
                   <td className="border-b border-line px-3.5 py-2.5">{formatHours(t.hours)}</td>
                   <td className="border-b border-line px-3.5 py-2.5">
                     {formatEuro(t.hours * t.rate_at_creation)}
+                    {t.status === "done" && t.student_id && (
+                      <span
+                        className={`block text-xs ${t.student_paid_at ? "text-teal" : "text-amber-deep"}`}
+                      >
+                        {t.student_paid_at
+                          ? `Uitbetaald op ${new Date(t.student_paid_at).toLocaleDateString("nl-BE")}`
+                          : "Nog te betalen"}
+                      </span>
+                    )}
                   </td>
                   <td className="border-b border-line px-3.5 py-2.5">
-                    <StatusBadge status={t.status} />
+                    {isExpiredOpen(t) ? (
+                      <span className="rounded-full bg-[#FBEAE6] px-2.5 py-1 text-xs font-semibold text-danger">
+                        Verlopen
+                      </span>
+                    ) : (
+                      <StatusBadge status={t.status} />
+                    )}
                   </td>
                   <td className={`border-b border-line px-3.5 py-2.5 ${PAYMENT_STYLES[t.payment_status]}`}>
                     {PAYMENT_LABELS[t.payment_status]}
@@ -167,6 +190,25 @@ export function AdminTasksPanel({
                             text: `${t.client_name} ontvangt meteen een factuur per mail (met betaallink als online betalen actief is). Dit kan je niet ongedaan maken.`,
                             confirmLabel: "Ja, voltooid",
                           }}
+                        />
+                      )}
+                      {t.status === "done" && t.student_id && !t.student_paid_at && (
+                        <ConfirmAction
+                          action={setStudentPaid.bind(null, t.id, true)}
+                          label="Markeer uitbetaald"
+                          successMessage="Als uitbetaald gemarkeerd. De student krijgt een mail."
+                          confirm={{
+                            title: "Student uitbetaald?",
+                            text: `Bevestig dat je ${formatEuro(t.hours * t.rate_at_creation)} aan ${t.student_name ?? "de student"} hebt uitbetaald. De student krijgt hiervan een mail.`,
+                            confirmLabel: "Ja, uitbetaald",
+                          }}
+                        />
+                      )}
+                      {t.status === "done" && t.student_id && t.student_paid_at && (
+                        <ConfirmAction
+                          action={setStudentPaid.bind(null, t.id, false)}
+                          label="Ongedaan maken"
+                          successMessage="Uitbetaling teruggezet."
                         />
                       )}
                       {(() => {

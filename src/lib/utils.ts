@@ -125,6 +125,34 @@ export function brusselsLocalToDate(date: string, time: string): Date {
   return new Date(guess - (asUtc - guess));
 }
 
+/** Is de klus (volgens de Belgische klok) al begonnen? */
+export function hasStarted(
+  task: { date: string; time: string },
+  now: Date = new Date()
+): boolean {
+  return brusselsLocalToDate(task.date, task.time) <= now;
+}
+
+/** Een open klus waarvan het startuur voorbij is: niemand kan nog gekozen worden. */
+export function isExpiredOpen(
+  task: { status: string; date: string; time: string },
+  now: Date = new Date()
+): boolean {
+  return task.status === "open" && hasStarted(task, now);
+}
+
+/** Overlappen twee klussen (zelfde dag, overlappend tijdsbereik)? */
+export function tasksOverlap(
+  a: { date: string; time: string; end_time: string },
+  b: { date: string; time: string; end_time: string }
+): boolean {
+  return (
+    a.date === b.date &&
+    a.time.slice(0, 5) < b.end_time.slice(0, 5) &&
+    b.time.slice(0, 5) < a.end_time.slice(0, 5)
+  );
+}
+
 /** "YYYY-MM-DD" van een tijdstip volgens de Belgische klok. */
 export function brusselsDateString(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels" }).format(date);

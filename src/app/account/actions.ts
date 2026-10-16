@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type ProfileState = {
   error: string | null;
   saved?: boolean;
-  values?: { phone: string; address: string; bio: string };
+  values?: { phone: string; address: string; bio: string; notify: boolean };
 };
 
 export async function updateProfile(
@@ -21,8 +21,10 @@ export async function updateProfile(
   // Het "over mij"-veld bestaat enkel in het formulier van studenten.
   const hasBio = formData.has("bio");
   const bio = String(formData.get("bio") ?? "").trim().slice(0, 400);
+  // Meldingen over nieuwe klussen (enkel in het formulier van studenten).
+  const notify = formData.get("notify_new_tasks") === "on";
   // React wist uncontrolled velden na een actie: stuur de waarden terug.
-  const values = { phone, address, bio };
+  const values = { phone, address, bio, notify };
 
   const supabase = await createClient();
   const {
@@ -35,7 +37,7 @@ export async function updateProfile(
     .update({
       phone: phone || null,
       address: address || null,
-      ...(hasBio ? { bio: bio || null } : {}),
+      ...(hasBio ? { bio: bio || null, notify_new_tasks: notify } : {}),
     })
     .eq("id", user.id);
 

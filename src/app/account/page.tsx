@@ -14,7 +14,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, phone, address, bio, role")
+    .select("name, email, phone, address, bio, role, notify_new_tasks")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -37,6 +37,7 @@ export default async function AccountPage() {
             phone={profile.phone}
             address={profile.address}
             bio={profile.bio}
+            notifyNewTasks={profile.notify_new_tasks}
             isStudent={profile.role === "student"}
           />
         </div>

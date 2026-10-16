@@ -1,5 +1,11 @@
 import type { BoardTask, Task } from "@/lib/types/domain";
-import { formatEuro, formatHours, formatTimeRange } from "@/lib/utils";
+import {
+  formatDateTime,
+  formatEuro,
+  formatHours,
+  formatTimeRange,
+  hasStarted,
+} from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 
@@ -8,11 +14,14 @@ type Action = () => Promise<void | { error?: string }>;
 export function BoardTaskCard({
   task,
   applied,
+  conflict = false,
   onApply,
   onWithdraw,
 }: {
   task: BoardTask;
   applied: boolean;
+  /** De student heeft op dat moment al een andere klus. */
+  conflict?: boolean;
   onApply: Action;
   onWithdraw: Action;
 }) {
@@ -65,6 +74,10 @@ export function BoardTaskCard({
               }}
             />
           </div>
+        ) : conflict ? (
+          <span className="text-sm text-ink-soft">
+            Je hebt op dat moment al een andere klus.
+          </span>
         ) : (
           <ConfirmAction
             action={onApply}
@@ -126,23 +139,53 @@ export function AssignedTaskCard({
       </p>
 
       <div className="flex flex-wrap items-center justify-end gap-2.5">
-        {task.status === "accepted" && (
-          <ConfirmAction
-            action={onComplete}
-            label="Markeer als voltooid"
-            className="btn btn-teal text-xs px-3.5 py-2"
-            successMessage="Klus als voltooid gemarkeerd."
-            confirm={{
-              title: "Klus voltooid?",
-              text: "De klant krijgt hiervan een melding. Dit kan je niet meer ongedaan maken.",
-              confirmLabel: "Ja, voltooid",
-            }}
-          />
-        )}
-        {task.status === "done" && (
-          <span className="text-sm text-ink-soft">Afgerond</span>
-        )}
+        {task.status === "accepted" &&
+          (hasStarted(task) ? (
+            <ConfirmAction
+              action={onComplete}
+              label="Markeer als voltooid"
+              className="btn btn-teal text-xs px-3.5 py-2"
+              successMessage="Klus als voltooid gemarkeerd."
+              confirm={{
+                title: "Klus voltooid?",
+                text: "De klant krijgt hiervan een melding. Dit kan je niet meer ongedaan maken.",
+                confirmLabel: "Ja, voltooid",
+              }}
+            />
+          ) : (
+            <span className="text-sm text-ink-soft">
+              Afronden kan vanaf {formatDateTime(task.date, task.time)}
+            </span>
+          ))}
       </div>
+
+      {task.status === "done" && (
+        <div className="mt-3 border-t border-line pt-3.5 text-sm text-ink-soft">
+          {task.rating !== null ? (
+            <>
+              <p className="mb-1">
+                Beoordeling van de klant:{" "}
+                <span className="text-amber-deep">
+                  {"★".repeat(task.rating)}
+                  {"☆".repeat(5 - task.rating)}
+                </span>
+              </p>
+              {task.review_comment && <p className="mb-1">“{task.review_comment}”</p>}
+            </>
+          ) : (
+            <p className="mb-1">Nog geen beoordeling van de klant.</p>
+          )}
+          <p>
+            {task.student_paid_at ? (
+              <span className="font-semibold text-teal">
+                Uitbetaald op {new Date(task.student_paid_at).toLocaleDateString("nl-BE")}
+              </span>
+            ) : (
+              "Uitbetaling volgt: je krijgt een mail zodra die verstuurd is."
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

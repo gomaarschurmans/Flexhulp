@@ -13,6 +13,7 @@ create table public.profiles (
   bio text,
   role text not null default 'client' check (role in ('client','student','admin')),
   banned boolean not null default false,
+  notify_new_tasks boolean not null default true,
   created_at timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
@@ -87,6 +88,8 @@ create table public.tasks (
   mollie_payment_id text,
   paid_at timestamptz,
   reminder_sent_at timestamptz,
+  completion_reminder_sent_at timestamptz,
+  student_paid_at timestamptz,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,
   completed_at timestamptz
@@ -135,7 +138,7 @@ create trigger on_auth_user_created
 -- Admin toekennen kan alleen via de Dashboard Table Editor (draait als postgres,
 -- omzeilt deze grants en RLS).
 revoke update on public.profiles from authenticated;
-grant update (name, phone, address, bio) on public.profiles to authenticated;
+grant update (name, phone, address, bio, notify_new_tasks) on public.profiles to authenticated;
 
 -- =========================================================
 -- Trigger: bewaakt geldige status-overgangen van een taak
@@ -146,8 +149,6 @@ grant update (name, phone, address, bio) on public.profiles to authenticated;
 create or replace function public.enforce_task_transitions()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  -- Geen ingelogde gebruiker in context = een service-role/backend-operatie
-  -- (bv. accountverwijdering), die al buiten RLS om vertrouwd wordt.
   if auth.uid() is null then
     return new;
   end if;
@@ -161,10 +162,6 @@ begin
       raise exception 'Dit is niet jouw taak.';
     end if;
 
-    -- Eigen open taak bewerken: enkel beschrijvende velden mogen wijzigen.
-    -- payment_status/mollie_payment_id/paid_at zijn hier ook geblokkeerd:
-    -- enkel de backend (service-role, die deze trigger overslaat) mag een
-    -- betaling aanmaken of bevestigen.
     if old.status = 'open' and new.status = 'open' then
       if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
          or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
@@ -174,13 +171,14 @@ begin
          or new.review_comment is distinct from old.review_comment
          or new.payment_status is distinct from old.payment_status
          or new.mollie_payment_id is distinct from old.mollie_payment_id
-         or new.paid_at is distinct from old.paid_at then
+         or new.paid_at is distinct from old.paid_at
+         or new.student_paid_at is distinct from old.student_paid_at
+         or new.completion_reminder_sent_at is distinct from old.completion_reminder_sent_at then
         raise exception 'Deze velden mag je niet aanpassen.';
       end if;
       return new;
     end if;
 
-    -- Eigen voltooide taak beoordelen: enkel rating/review_comment mogen wijzigen.
     if old.status = 'done' and new.status = 'done' then
       if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
          or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
@@ -189,7 +187,9 @@ begin
          or new.student_id is distinct from old.student_id
          or new.payment_status is distinct from old.payment_status
          or new.mollie_payment_id is distinct from old.mollie_payment_id
-         or new.paid_at is distinct from old.paid_at then
+         or new.paid_at is distinct from old.paid_at
+         or new.student_paid_at is distinct from old.student_paid_at
+         or new.completion_reminder_sent_at is distinct from old.completion_reminder_sent_at then
         raise exception 'Deze velden mag je niet aanpassen.';
       end if;
       return new;
@@ -198,14 +198,26 @@ begin
     raise exception 'Ongeldige aanpassing.';
   end if;
 
-  -- Een student kan zichzelf niet aan een taak toewijzen: de klant kiest en
-  -- wijst toe via de acceptStudent() server action (service-role).
   if old.status = 'accepted' and new.status = 'done' then
     if old.student_id is distinct from auth.uid() then
       raise exception 'Dit is niet jouw opdracht.';
     end if;
     if new.student_id is distinct from old.student_id then
       raise exception 'De toegewezen student kan niet gewijzigd worden.';
+    end if;
+    if ((old.date + old.time) at time zone 'Europe/Brussels') > now() then
+      raise exception 'Je kan een klus pas afronden vanaf het begin ervan.';
+    end if;
+    if new.date <> old.date or new.time <> old.time or new.end_time <> old.end_time
+       or new.hours <> old.hours or new.rate_at_creation <> old.rate_at_creation
+       or new.rating is distinct from old.rating
+       or new.review_comment is distinct from old.review_comment
+       or new.payment_status is distinct from old.payment_status
+       or new.mollie_payment_id is distinct from old.mollie_payment_id
+       or new.paid_at is distinct from old.paid_at
+       or new.student_paid_at is distinct from old.student_paid_at
+       or new.completion_reminder_sent_at is distinct from old.completion_reminder_sent_at then
+      raise exception 'Bij het afronden mag je niets anders aanpassen.';
     end if;
     return new;
   end if;
@@ -556,7 +568,11 @@ create policy "applications_insert_student" on public.task_applications for inse
   to authenticated with check (
     public.get_my_role() = 'student'
     and student_id = auth.uid()
-    and exists (select 1 from public.task_board tb where tb.id = task_id)
+    and exists (
+      select 1 from public.task_board tb
+      where tb.id = task_id
+        and ((tb.date + tb.time) at time zone 'Europe/Brussels') > now()
+    )
     and not exists (
       select 1 from public.profiles p where p.id = auth.uid() and p.banned
     )

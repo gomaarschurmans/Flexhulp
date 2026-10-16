@@ -19,6 +19,7 @@ export interface Profile {
   bio: string | null;
   role: Role;
   banned: boolean;
+  notify_new_tasks: boolean;
   created_at: string;
 }
 
@@ -50,6 +51,8 @@ export interface Task {
   mollie_payment_id: string | null;
   paid_at: string | null;
   reminder_sent_at: string | null;
+  completion_reminder_sent_at: string | null;
+  student_paid_at: string | null;
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;

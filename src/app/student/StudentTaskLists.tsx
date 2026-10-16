@@ -8,6 +8,7 @@ import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { AssignedTaskCard, BoardTaskCard } from "@/components/TaskCard";
 import { applyToTask, withdrawApplication, completeTask } from "@/app/student/actions";
 import { CATEGORIES } from "@/lib/constants";
+import { formatEuro, hasStarted, tasksOverlap } from "@/lib/utils";
 import type { BoardTask, Task, TaskApplication } from "@/lib/types/domain";
 
 export function StudentTaskLists({
@@ -39,6 +40,7 @@ export function StudentTaskLists({
   const open = useMemo(
     () =>
       board
+        .filter((t) => !hasStarted(t))
         .filter((t) => !category || t.category === category)
         .sort((a, b) => (a.created_at > b.created_at ? 1 : -1)),
     [board, category]
@@ -52,8 +54,39 @@ export function StudentTaskLists({
     [assigned, userId]
   );
 
+  const myAccepted = useMemo(() => mine.filter((t) => t.status === "accepted"), [mine]);
+
+  // Overzicht: aantal klussen, gemiddelde score en verdiensten.
+  const summary = useMemo(() => {
+    const done = mine.filter((t) => t.status === "done");
+    const ratings = done.map((t) => t.rating).filter((r): r is number => r !== null);
+    const avg = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null;
+    const amount = (t: Task) => t.hours * t.rate_at_creation;
+    return {
+      jobs: done.length,
+      avg,
+      ratingCount: ratings.length,
+      earned: done.reduce((sum, t) => sum + amount(t), 0),
+      outstanding: done.filter((t) => !t.student_paid_at).reduce((sum, t) => sum + amount(t), 0),
+    };
+  }, [mine]);
+
   return (
     <div>
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <SummaryTile label="Voltooide klussen" value={String(summary.jobs)} />
+        <SummaryTile
+          label={
+            summary.ratingCount > 0
+              ? `Gemiddelde score (${summary.ratingCount})`
+              : "Gemiddelde score"
+          }
+          value={summary.avg !== null ? `★ ${summary.avg.toFixed(1).replace(".", ",")}` : "–"}
+        />
+        <SummaryTile label="Totaal verdiend" value={formatEuro(summary.earned)} />
+        <SummaryTile label="Nog uit te betalen" value={formatEuro(summary.outstanding)} />
+      </div>
+
       <p className="mb-5 text-sm text-ink-soft">
         Bekijk openstaande taken en meld je aan voor wat bij je past. De
         klant kiest zelf wie de taak toegewezen krijgt.
@@ -73,7 +106,7 @@ export function StudentTaskLists({
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-line bg-card px-3 py-2 text-sm"
+          className="rounded-lg border border-line bg-card px-3 py-2 text-base sm:text-sm"
         >
           <option value="">Alle categorieën</option>
           {CATEGORIES.map((c) => (
@@ -96,6 +129,7 @@ export function StudentTaskLists({
               key={task.id}
               task={task}
               applied={myApplicationTaskIds.has(task.id)}
+              conflict={myAccepted.some((m) => tasksOverlap(m, task))}
               onApply={applyToTask.bind(null, task.id)}
               onWithdraw={withdrawApplication.bind(null, task.id)}
             />
@@ -121,6 +155,15 @@ export function StudentTaskLists({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="card p-4">
+      <span className="mb-0.5 block text-2xl font-semibold">{value}</span>
+      <span className="text-xs text-ink-soft">{label}</span>
     </div>
   );
 }

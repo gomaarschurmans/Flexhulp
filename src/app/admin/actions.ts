@@ -7,7 +7,7 @@ import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { SITE_URL } from "@/lib/mollie/client";
 import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
-import { paymentRequestEmail } from "@/lib/resend/templates";
+import { paymentRequestEmail, studentPaidEmail } from "@/lib/resend/templates";
 import type { Task } from "@/lib/types/domain";
 
 export async function updateRate(formData: FormData) {
@@ -131,6 +131,42 @@ export async function adminDeleteTask(id: string) {
     };
   }
   revalidatePath("/admin");
+}
+
+/** Houdt bij of de vergoeding van een voltooide klus al aan de student is uitbetaald. */
+export async function setStudentPaid(id: string, paid: boolean) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Niet ingelogd." };
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role !== "admin") return { error: "Geen toegang." };
+
+  const { data: task, error } = await supabase
+    .from("tasks")
+    .update({ student_paid_at: paid ? new Date().toISOString() : null })
+    .eq("id", id)
+    .eq("status", "done")
+    .not("student_id", "is", null)
+    .select()
+    .single<Task>();
+  if (error || !task) {
+    return { error: "Bijwerken is mislukt. Enkel voltooide klussen met een student kunnen uitbetaald worden." };
+  }
+
+  if (paid && task.student_email) {
+    try {
+      const { subject, html } = studentPaidEmail(task);
+      await getResend().emails.send({ from: FROM_EMAIL, to: task.student_email, subject, html });
+    } catch (e) {
+      console.error("Uitbetalingsmail versturen mislukt", e);
+    }
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/student");
 }
 
 export async function setUserBanned(id: string, banned: boolean) {

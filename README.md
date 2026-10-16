@@ -124,7 +124,8 @@ maar zijn aan te raden voor echt gebruik:
   delen, nooit als `NEXT_PUBLIC_`-variabele zetten.
 - **Herinneringen**: een dagelijkse Vercel-cron (`vercel.json`, 17:00 UTC,
   dus 19u zomertijd / 18u wintertijd) mailt klant en student 's avonds de dag voor de klus en stuurt de admin een
-  planningsoverzicht. Vereist `CRON_SECRET` in Vercel (willekeurige lange
+  planningsoverzicht. Dezelfde cron mailt ook studenten die een klus van vóór
+  vandaag nog niet hebben afgerond (eenmalig) en geeft de admin daar een overzicht van. Vereist `CRON_SECRET` in Vercel (willekeurige lange
   tekst) en `migration_v12_reminders.sql`. Sms enkel als Twilio ingesteld is.
 - **Online betalen** ([Mollie](https://www.mollie.com), pay-per-transactie,
   geen abonnement): maak een account aan, kopieer een API-sleutel
@@ -161,6 +162,9 @@ in `supabase/`, in volgorde:
     score en aantal klussen op elke aanmelding
 14. `migration_v12_reminders.sql` — bijhouden wanneer de herinnering
     verstuurd werd
+15. `migration_v13_workflow.sql` — afronden pas vanaf de start, uitbetalingen
+    aan studenten bijhouden, meldingen over nieuwe klussen (met opt-out) en
+    een herinnering bij vergeten afrondingen
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

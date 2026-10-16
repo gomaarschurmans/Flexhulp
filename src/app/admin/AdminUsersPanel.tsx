@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { setUserBanned } from "@/app/admin/actions";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
+import { formatEuro } from "@/lib/utils";
 import type { Profile, Task } from "@/lib/types/domain";
 
 type Kind = "client" | "student";
@@ -43,13 +44,21 @@ export function AdminUsersPanel({
 
   // Aantal taken (klant) of voltooide klussen + gemiddelde score (student).
   const stats = useMemo(() => {
-    const map = new Map<string, { count: number; ratings: number[] }>();
+    const map = new Map<
+      string,
+      { count: number; ratings: number[]; toPay: number; paid: number }
+    >();
     for (const t of tasks) {
       const id = kind === "client" ? t.client_id : t.student_id;
       if (!id) continue;
       if (kind === "student" && t.status !== "done") continue;
-      const entry = map.get(id) ?? { count: 0, ratings: [] };
+      const entry = map.get(id) ?? { count: 0, ratings: [], toPay: 0, paid: 0 };
       entry.count += 1;
+      if (kind === "student") {
+        const amount = t.hours * t.rate_at_creation;
+        if (t.student_paid_at) entry.paid += amount;
+        else entry.toPay += amount;
+      }
       if (kind === "student" && t.rating !== null) entry.ratings.push(t.rating);
       map.set(id, entry);
     }
@@ -103,6 +112,9 @@ export function AdminUsersPanel({
               <th className="border-b border-line px-3.5 py-2.5 font-semibold">
                 {kind === "client" ? "Taken" : "Klussen · score"}
               </th>
+              {kind === "student" && (
+                <th className="border-b border-line px-3.5 py-2.5 font-semibold">Uitbetaling</th>
+              )}
               <th className="border-b border-line px-3.5 py-2.5 font-semibold">Status</th>
               <th className="border-b border-line px-3.5 py-2.5" />
             </tr>
@@ -110,7 +122,7 @@ export function AdminUsersPanel({
           <tbody>
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3.5 py-6 text-ink-soft">
+                <td colSpan={kind === "student" ? 6 : 5} className="px-3.5 py-6 text-ink-soft">
                   Geen {copy.noun} gevonden voor deze zoekopdracht.
                 </td>
               </tr>
@@ -136,6 +148,16 @@ export function AdminUsersPanel({
                       {s?.count ?? 0}
                       {kind === "student" && (avg ? ` · ★ ${avg}` : " · nog geen score")}
                     </td>
+                    {kind === "student" && (
+                      <td className="border-b border-line px-3.5 py-2.5 text-xs">
+                        <span className={s && s.toPay > 0 ? "font-semibold text-amber-deep" : "text-ink-soft"}>
+                          Te betalen: {formatEuro(s?.toPay ?? 0)}
+                        </span>
+                        <span className="block text-ink-soft">
+                          Uitbetaald: {formatEuro(s?.paid ?? 0)}
+                        </span>
+                      </td>
+                    )}
                     <td className="border-b border-line px-3.5 py-2.5">
                       {u.banned ? (
                         <span className="rounded-full bg-[#FBEAE6] px-2.5 py-1 text-xs font-semibold text-danger">

@@ -12,7 +12,7 @@ import {
   type ReviewState,
 } from "@/app/klant/actions";
 import { CATEGORIES } from "@/lib/constants";
-import { formatTimeRange, formatEuro, formatHours } from "@/lib/utils";
+import { formatTimeRange, formatEuro, formatHours, isExpiredOpen } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -31,6 +31,7 @@ export function ClientTaskItem({
   invoice: InvoiceSummary | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const expired = isExpiredOpen(task);
   const [editState, editAction, editPending] = useActionState(
     editTask.bind(null, task.id),
     editInitial
@@ -138,7 +139,13 @@ export function ClientTaskItem({
           </span>
           <h3 className="m-0 text-lg font-semibold">{task.title}</h3>
         </div>
-        <StatusBadge status={task.status} />
+        {expired ? (
+          <span className="rounded-full bg-[#FBEAE6] px-2.5 py-1 text-xs font-semibold text-danger">
+            Verlopen
+          </span>
+        ) : (
+          <StatusBadge status={task.status} />
+        )}
       </div>
 
       {task.description && (
@@ -165,7 +172,26 @@ export function ClientTaskItem({
         </span>
       </div>
 
-      {task.status === "open" && (
+      {expired && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-ink-soft">
+            Deze klus is voorbij zonder dat een student gekozen werd.
+          </p>
+          <ConfirmAction
+            action={cancelTask.bind(null, task.id)}
+            label="Verwijderen"
+            successMessage="Klus verwijderd."
+            confirm={{
+              title: "Klus verwijderen?",
+              text: "Deze klus verdwijnt uit je overzicht.",
+              confirmLabel: "Ja, verwijder",
+              danger: true,
+            }}
+          />
+        </div>
+      )}
+
+      {task.status === "open" && !expired && (
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -188,7 +214,7 @@ export function ClientTaskItem({
         </div>
       )}
 
-      {task.status === "open" && applications.length > 0 && (
+      {task.status === "open" && !expired && applications.length > 0 && (
         <div className="mt-3 border-t border-line pt-3.5">
           <p className="mb-2 text-sm font-medium">
             {applications.length} student
@@ -281,7 +307,7 @@ export function ClientTaskItem({
           <textarea
             name="review_comment"
             placeholder="Opmerking (optioneel)"
-            className="mb-2 w-full rounded-lg border border-line bg-[#FCFBF9] px-3 py-2.5 text-sm"
+            className="mb-2 w-full rounded-lg border border-line bg-[#FCFBF9] px-3 py-2.5 text-base sm:text-sm"
           />
           {reviewState.error && (
             <p className="mb-2 text-sm text-danger">{reviewState.error}</p>
