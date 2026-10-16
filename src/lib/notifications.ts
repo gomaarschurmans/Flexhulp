@@ -12,7 +12,8 @@ export async function sendMails(mails: Mail[]) {
   for (let i = 0; i < mails.length; i += 100) {
     const chunk = mails.slice(i, i + 100);
     try {
-      await resend.batch.send(
+      // Resend geeft fouten terug in plaats van ze te gooien.
+      const { error } = await resend.batch.send(
         chunk.map((m) => ({
           from: FROM_EMAIL,
           to: [m.to],
@@ -20,6 +21,7 @@ export async function sendMails(mails: Mail[]) {
           html: m.html,
         }))
       );
+      if (error) console.error("Batch-mail versturen mislukt", error);
     } catch (e) {
       console.error("Batch-mail versturen mislukt", e);
     }
