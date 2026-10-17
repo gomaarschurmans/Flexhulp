@@ -9,6 +9,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StudentReviewForm } from "@/components/StudentReviewForm";
+import { Stars, formatRating } from "@/components/Stars";
 
 type Action = () => Promise<void | { error?: string }>;
 
@@ -176,12 +177,9 @@ export function AssignedTaskCard({
         <div className="mt-3 border-t border-line pt-3.5 text-sm text-ink-soft">
           {task.rating !== null ? (
             <>
-              <p className="mb-1">
-                Beoordeling van de klant:{" "}
-                <span className="text-amber-deep">
-                  {"★".repeat(task.rating)}
-                  {"☆".repeat(5 - task.rating)}
-                </span>
+              <p className="mb-1 flex items-center gap-2">
+                Beoordeling van de klant: <Stars value={task.rating} size={18} />
+                <span>{formatRating(task.rating)} van 5</span>
               </p>
               {task.review_comment && <p className="mb-1">“{task.review_comment}”</p>}
             </>
@@ -198,12 +196,9 @@ export function AssignedTaskCard({
             )}
           </p>
           {task.student_rating !== null && (
-            <p>
-              Jouw beoordeling van de klant:{" "}
-              <span className="text-amber-deep">
-                {"★".repeat(task.student_rating)}
-                {"☆".repeat(5 - task.student_rating)}
-              </span>
+            <p className="flex items-center gap-2">
+              Jouw beoordeling van de klant: <Stars value={task.student_rating} size={18} />
+              <span>{formatRating(task.student_rating)} van 5</span>
             </p>
           )}
         </div>

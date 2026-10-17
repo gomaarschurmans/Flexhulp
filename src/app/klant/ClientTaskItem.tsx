@@ -17,6 +17,7 @@ import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StudentAvatar } from "@/components/StudentAvatar";
+import { Stars, StarRatingInput, formatRating } from "@/components/Stars";
 import type { InvoiceSummary, Task, TaskApplication } from "@/lib/types/domain";
 
 const editInitial: EditTaskState = { error: null };
@@ -238,7 +239,7 @@ export function ClientTaskItem({
                     <strong>{a.student_name}</strong>
                     <p className="text-xs text-ink-soft">
                       {a.student_rating_count > 0 && a.student_avg_rating !== null
-                        ? `★ ${a.student_avg_rating.toFixed(1).replace(".", ",")} (${a.student_rating_count} beoordeling${a.student_rating_count > 1 ? "en" : ""}) · `
+                        ? `★ ${Number(a.student_avg_rating).toFixed(1).replace(".", ",")} (${a.student_rating_count} beoordeling${a.student_rating_count > 1 ? "en" : ""}) · `
                         : "Nog geen beoordelingen · "}
                       {a.student_jobs_done === 0
                         ? "nieuw bij Flexhulp"
@@ -263,7 +264,7 @@ export function ClientTaskItem({
                   <div className="mt-2.5 flex flex-col gap-1 border-l-2 border-line pl-3 text-xs text-ink-soft">
                     {a.student_reviews.map((r, i) => (
                       <p key={i}>
-                        “{r.comment}” <span className="text-amber-deep">{"★".repeat(r.rating)}</span>
+                        “{r.comment}” <Stars value={r.rating} size={12} />
                       </p>
                     ))}
                   </div>
@@ -321,19 +322,8 @@ export function ClientTaskItem({
       {task.status === "done" && task.rating === null && (
         <form action={reviewAction} className="mt-2 border-t border-line pt-3.5">
           <p className="mb-2 text-sm font-medium">Hoe ging het?</p>
-          <div className="mb-2 flex gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <label key={n} className="cursor-pointer text-lg">
-                <input
-                  type="radio"
-                  name="rating"
-                  value={n}
-                  defaultChecked={n === 5}
-                  className="peer sr-only"
-                />
-                <span className="peer-checked:opacity-100 opacity-40">★</span>
-              </label>
-            ))}
+          <div className="mb-3">
+            <StarRatingInput name="rating" />
           </div>
           <textarea
             name="review_comment"
@@ -355,9 +345,9 @@ export function ClientTaskItem({
 
       {task.status === "done" && task.rating !== null && (
         <div className="mt-2 border-t border-line pt-3.5 text-sm text-ink-soft">
-          <p className="mb-1">
-            Jouw beoordeling: {"★".repeat(task.rating)}
-            {"☆".repeat(5 - task.rating)}
+          <p className="mb-1 flex items-center gap-2">
+            Jouw beoordeling: <Stars value={task.rating} size={18} />
+            <span>{formatRating(task.rating)} van 5</span>
           </p>
           {task.review_comment && <p>{task.review_comment}</p>}
         </div>

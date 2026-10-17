@@ -6,6 +6,7 @@ import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
+import { formatRating } from "@/components/Stars";
 import { adminDeleteTask, markTaskDone, setStudentPaid } from "@/app/admin/actions";
 import { formatEuro, formatHours, isExpiredOpen } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
@@ -158,7 +159,7 @@ export function AdminTasksPanel({
                         className="block text-xs text-ink-soft"
                         title={t.student_review_comment ?? "Geen opmerking"}
                       >
-                        Student gaf ★ {t.student_rating}
+                        Student gaf ★ {formatRating(t.student_rating)}
                         {t.student_review_comment ? ` · “${t.student_review_comment}”` : ""}
                       </span>
                     )}

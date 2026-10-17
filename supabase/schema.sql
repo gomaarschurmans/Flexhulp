@@ -85,7 +85,8 @@ create table public.tasks (
   student_email text,
   status text not null default 'open' check (status in ('open','accepted','done')),
   extra_info text not null default '',
-  rating smallint check (rating between 1 and 5),
+  -- Halve sterren: 1, 1,5 ... 5 (zie migration_v15_half_star_ratings.sql)
+  rating numeric(2,1) check (rating is null or (rating between 1 and 5 and rating * 2 = round(rating * 2))),
   review_comment text,
   window_id uuid references public.availability(id) on delete set null,
   payment_status text not null default 'unpaid'
@@ -95,7 +96,7 @@ create table public.tasks (
   reminder_sent_at timestamptz,
   completion_reminder_sent_at timestamptz,
   student_paid_at timestamptz,
-  student_rating smallint check (student_rating between 1 and 5),
+  student_rating numeric(2,1) check (student_rating is null or (student_rating between 1 and 5 and student_rating * 2 = round(student_rating * 2))),
   student_review_comment text,
   created_at timestamptz not null default now(),
   accepted_at timestamptz,

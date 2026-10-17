@@ -362,7 +362,11 @@ export async function editTask(
 }
 
 const reviewSchema = z.object({
-  rating: z.coerce.number().int().min(1).max(5),
+  rating: z.coerce
+    .number()
+    .min(1, "Kies een aantal sterren.")
+    .max(5)
+    .refine((v) => Number.isInteger(v * 2), "Kies hele of halve sterren."),
   review_comment: z.string().trim().default(""),
 });
 

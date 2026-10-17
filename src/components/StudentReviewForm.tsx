@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { submitStudentReview, type StudentReviewState } from "@/app/student/actions";
 import { useToast } from "@/components/Toast";
+import { StarRatingInput } from "@/components/Stars";
 
 const initialState: StudentReviewState = { error: null };
 
@@ -21,19 +22,8 @@ export function StudentReviewForm({ taskId }: { taskId: string }) {
   return (
     <form action={formAction} className="mt-3 border-t border-line pt-3.5">
       <p className="mb-2 text-sm font-medium">Hoe was de klant?</p>
-      <div className="mb-2 flex gap-1" role="radiogroup" aria-label="Aantal sterren">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <label key={n} className="cursor-pointer text-xl">
-            <input
-              type="radio"
-              name="rating"
-              value={n}
-              defaultChecked={n === 5}
-              className="peer sr-only"
-            />
-            <span className="opacity-40 peer-checked:opacity-100">★</span>
-          </label>
-        ))}
+      <div className="mb-3">
+        <StarRatingInput name="rating" />
       </div>
       <textarea
         name="comment"

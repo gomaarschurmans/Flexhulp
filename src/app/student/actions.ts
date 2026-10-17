@@ -185,7 +185,7 @@ export async function submitStudentReview(
 ): Promise<StudentReviewState> {
   const rating = Number(formData.get("rating"));
   const comment = String(formData.get("comment") ?? "").trim().slice(0, 400);
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5 || !Number.isInteger(rating * 2)) {
     return { error: "Kies een aantal sterren." };
   }
 
