@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { setUserBanned } from "@/app/admin/actions";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StudentAvatar } from "@/components/StudentAvatar";
+import { Stars } from "@/components/Stars";
+import { formatRating } from "@/lib/utils";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
 import { formatEuro } from "@/lib/utils";
 import type { Profile, Task } from "@/lib/types/domain";
@@ -66,6 +68,19 @@ export function AdminUsersPanel({
     }
     return map;
   }, [tasks, kind]);
+
+  // Alle beoordelingen die een student van klanten kreeg, nieuwste eerst.
+  const reviewsByStudent = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      if (!t.student_id || t.status !== "done" || t.rating === null) continue;
+      map.set(t.student_id, [...(map.get(t.student_id) ?? []), t]);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => ((a.completed_at ?? "") < (b.completed_at ?? "") ? 1 : -1));
+    }
+    return map;
+  }, [tasks]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -131,12 +146,7 @@ export function AdminUsersPanel({
             ) : (
               visible.map((u) => {
                 const s = stats.get(u.id);
-                const avg =
-                  s && s.ratings.length
-                    ? (s.ratings.reduce((a, b) => a + b, 0) / s.ratings.length)
-                        .toFixed(1)
-                        .replace(".", ",")
-                    : null;
+                const reviews = reviewsByStudent.get(u.id) ?? [];
                 return (
                   <tr key={u.id}>
                     <td className="border-b border-line px-3.5 py-2.5">
@@ -181,8 +191,44 @@ export function AdminUsersPanel({
                       )}
                     </td>
                     <td className="border-b border-line px-3.5 py-2.5">
-                      {s?.count ?? 0}
-                      {kind === "student" && (avg ? ` · ★ ${avg}` : " · nog geen score")}
+                      {kind === "student" ? u.jobs_done : (s?.count ?? 0)}
+                      {kind === "student" && (
+                        <span className="mt-1 block">
+                          {u.rating_count > 0 && u.rating_avg !== null ? (
+                            <span className="flex items-center gap-1.5 text-xs">
+                              <Stars value={Number(u.rating_avg)} size={14} />
+                              <span className="font-semibold">{formatRating(Number(u.rating_avg))}</span>
+                              <span className="text-ink-soft">
+                                ({u.rating_count} beoordeling{u.rating_count > 1 ? "en" : ""})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-ink-soft">Nog geen beoordelingen</span>
+                          )}
+                        </span>
+                      )}
+                      {kind === "student" && reviews.length > 0 && (
+                        <details className="mt-1.5 text-xs">
+                          <summary className="cursor-pointer font-semibold text-ink-soft">
+                            Alle beoordelingen
+                          </summary>
+                          <ul className="mt-1.5 flex flex-col gap-1.5">
+                            {reviews.map((r) => (
+                              <li key={r.id} className="rounded border border-line bg-[#FAF9F6] p-2">
+                                <span className="flex flex-wrap items-center gap-1.5">
+                                  <Stars value={Number(r.rating)} size={12} />
+                                  <span className="font-semibold">{formatRating(Number(r.rating))}</span>
+                                  <span className="text-ink-soft">
+                                    · {r.category} · {r.client_name} ·{" "}
+                                    {new Date(r.completed_at ?? r.created_at).toLocaleDateString("nl-BE")}
+                                  </span>
+                                </span>
+                                {r.review_comment && <span className="mt-0.5 block">“{r.review_comment}”</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
                       {kind === "client" && s && s.clientRatings.length > 0 && (
                         <span className="block text-xs text-ink-soft">
                           Beoordeeld door studenten: ★{" "}

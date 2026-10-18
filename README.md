@@ -170,6 +170,9 @@ in `supabase/`, in volgorde:
     student over de klant. Maakt ook de privé opslagbucket `student-photos` aan
 17. `migration_v15_half_star_ratings.sql` — beoordelingen in halve sterren
     (1, 1,5 ... 5)
+18. `migration_v16_student_score.sql` — de reviewscore per student (aantal klussen,
+    gemiddelde, aantal beoordelingen) wordt vast bijgehouden door de database
+    en houdt ook de aanmeldingen up-to-date
 
 Draai ontbrekende migraties in de Supabase SQL Editor **voor** je de
 bijhorende code-versie deployt.

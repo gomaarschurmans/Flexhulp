@@ -6,7 +6,7 @@ import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
-import { formatRating } from "@/components/Stars";
+import { formatRating } from "@/lib/utils";
 import { adminDeleteTask, markTaskDone, setStudentPaid } from "@/app/admin/actions";
 import { formatEuro, formatHours, isExpiredOpen } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";

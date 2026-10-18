@@ -32,6 +32,10 @@ export interface Profile {
   photo_reject_reason: string | null;
   photo_updated_at: string | null;
   traits: string[];
+  /** Vaste score, bijgehouden door de database (zie migration_v16). */
+  jobs_done: number;
+  rating_avg: number | null;
+  rating_count: number;
   created_at: string;
 }
 

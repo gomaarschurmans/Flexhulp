@@ -17,7 +17,8 @@ import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StudentAvatar } from "@/components/StudentAvatar";
-import { Stars, StarRatingInput, formatRating } from "@/components/Stars";
+import { Stars, StarRatingInput } from "@/components/Stars";
+import { formatRating } from "@/lib/utils";
 import type { InvoiceSummary, Task, TaskApplication } from "@/lib/types/domain";
 
 const editInitial: EditTaskState = { error: null };
@@ -378,6 +379,27 @@ function AssignedStudent({
         <p className="text-ink-soft">
           Toegewezen aan <strong className="text-ink">{task.student_name}</strong>
         </p>
+        {application && (
+          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+            {application.student_rating_count > 0 && application.student_avg_rating !== null ? (
+              <>
+                <Stars value={Number(application.student_avg_rating)} size={13} />
+                <span className="font-semibold text-ink">
+                  {formatRating(Number(application.student_avg_rating))}
+                </span>
+                <span>({application.student_rating_count})</span>
+                <span>·</span>
+              </>
+            ) : (
+              <span>Nog geen beoordelingen ·</span>
+            )}
+            <span>
+              {application.student_jobs_done === 0
+                ? "nieuw bij Flexhulp"
+                : `${application.student_jobs_done} voltooide klus${application.student_jobs_done > 1 ? "sen" : ""}`}
+            </span>
+          </p>
+        )}
         {application?.student_traits?.length ? (
           <div className="mt-1 flex flex-wrap gap-1.5">
             {application.student_traits.map((trait) => (

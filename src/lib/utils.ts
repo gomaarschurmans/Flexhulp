@@ -9,6 +9,12 @@ export function formatHours(hours: number): string {
   return String(Math.round(hours * 100) / 100).replace(".", ",");
 }
 
+/** "4" voor een heel getal, "3,5" voor een halve ster. */
+export function formatRating(value: number): string {
+  const v = Math.round(Number(value) * 2) / 2;
+  return Number.isInteger(v) ? String(v) : String(v).replace(".", ",");
+}
+
 export function sortAvailability(rows: AvailabilitySlot[]): AvailabilitySlot[] {
   return [...rows].sort((a, b) =>
     a.slot_date === b.slot_date

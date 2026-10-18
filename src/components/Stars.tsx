@@ -1,12 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-
-/** "4" voor een heel getal, "3,5" voor een halve ster. */
-export function formatRating(value: number): string {
-  const v = Math.round(Number(value) * 2) / 2;
-  return Number.isInteger(v) ? String(v) : String(v).replace(".", ",");
-}
+import { formatRating } from "@/lib/utils";
 
 /**
  * Toont een score als sterren, tot op de helft ingekleurd: bij 3,5 zijn drie

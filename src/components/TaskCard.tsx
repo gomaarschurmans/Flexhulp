@@ -9,7 +9,8 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StudentReviewForm } from "@/components/StudentReviewForm";
-import { Stars, formatRating } from "@/components/Stars";
+import { Stars } from "@/components/Stars";
+import { formatRating } from "@/lib/utils";
 
 type Action = () => Promise<void | { error?: string }>;
 
