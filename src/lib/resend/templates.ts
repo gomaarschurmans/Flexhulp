@@ -1,5 +1,11 @@
 import { formatDateTime, formatEuro, formatHours, formatTimeRange } from "@/lib/utils";
-import { formatInvoiceNumber } from "@/lib/invoicing/business";
+import {
+  SELLER,
+  PAYMENT_TERM_DAYS,
+  formatIban,
+  formatInvoiceNumber,
+  invoiceDueDate,
+} from "@/lib/invoicing/business";
 import type { HourRequest, Invoice, Task } from "@/lib/types/domain";
 
 /** Escapet tekst van gebruikers voordat die in de HTML van een e-mail komt. */
@@ -98,7 +104,12 @@ export function paymentRequestEmail(
       `<p>Bedankt! <strong>${task.category}</strong> op
        <strong>${formatTimeRange(task.date, task.time, task.end_time)}</strong> is uitgevoerd.</p>
        <p>Te betalen: <strong>${amount}</strong> (${formatHours(task.hours)} u × ${formatEuro(task.rate_at_creation)})</p>
-       ${invoice ? `<p>Factuur: <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong></p>` : ""}
+       ${invoice ? `<p>Factuur: <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong>, te betalen binnen ${PAYMENT_TERM_DAYS} dagen (uiterlijk ${invoiceDueDate(invoice.issued_at).toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" })}).</p>` : ""}
+       ${
+         SELLER.iban && invoice
+           ? `<p>Liever overschrijven? Rekeningnummer <strong>${formatIban(SELLER.iban)}</strong> t.n.v. ${SELLER.name}, met vermelding van <strong>${formatInvoiceNumber(invoice.invoice_number)}</strong>.</p>`
+           : ""
+       }
        <p style="margin-top: 20px;">
          ${
            checkoutUrl

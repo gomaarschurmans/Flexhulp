@@ -56,7 +56,7 @@ export async function bookTimeRange(
   formData: FormData
 ): Promise<BookSlotState> {
   const values: Record<string, string> = {};
-  for (const key of ["category", "description", "city", "location", "extra_info"]) {
+  for (const key of ["category", "description", "city", "location", "extra_info", "accept_start"]) {
     values[key] = String(formData.get(key) ?? "");
   }
 
@@ -73,6 +73,14 @@ export async function bookTimeRange(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Ongeldige invoer.", values };
+  }
+
+  // Uitdrukkelijke toestemming dat de klus mag starten (herroepingsrecht, art. 8 van de voorwaarden).
+  if (formData.get("accept_start") !== "on") {
+    return {
+      error: "Vink aan dat de klus op het gekozen tijdstip mag starten om te kunnen boeken.",
+      values,
+    };
   }
 
   const turnstileOk = await verifyTurnstile(formData.get("cf-turnstile-response"));

@@ -306,6 +306,23 @@ export function CreateTaskForm({
             />
           </div>
           {preview && <p className="mb-3 text-sm text-ink-soft">{preview}</p>}
+          <label className="mb-3 flex items-start gap-2 text-xs text-ink-soft">
+            <input
+              type="checkbox"
+              name="accept_start"
+              required
+              defaultChecked={state.values?.accept_start === "on"}
+              className="mt-0.5"
+            />
+            <span>
+              Ik vraag dat de klus op het gekozen tijdstip start. Ik weet dat ik mijn
+              herroepingsrecht verlies zodra de klus volledig is uitgevoerd (zie{" "}
+              <a href="/terms" target="_blank" rel="noreferrer" className="underline">
+                artikel 8 van de voorwaarden
+              </a>
+              ).
+            </span>
+          </label>
           <Turnstile resetKey={state} />
           {state.error && (
             <p className="mb-3 text-sm text-danger">{state.error}</p>

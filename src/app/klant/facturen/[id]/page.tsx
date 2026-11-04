@@ -18,5 +18,18 @@ export default async function KlantFactuurPage({
 
   if (!invoice) notFound();
 
-  return <InvoiceView invoice={invoice} />;
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("paid_at, payment_status")
+    .eq("id", invoice.task_id)
+    .maybeSingle();
+  const paidAt = task?.payment_status === "paid" ? (task.paid_at ?? null) : null;
+
+  return (
+    <InvoiceView
+      invoice={invoice}
+      paidAt={paidAt}
+      onlinePayments={Boolean(process.env.MOLLIE_API_KEY)}
+    />
+  );
 }
