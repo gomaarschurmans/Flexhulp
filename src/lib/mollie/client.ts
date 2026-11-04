@@ -24,4 +24,7 @@ export const SITE_URL =
  * het definitieve adres met "www": flexhulp.be stuurt door naar www.flexhulp.be
  * en Mollie volgt zo'n omleiding niet altijd bij een webhook.
  */
-export const CANONICAL_URL = SITE_URL.replace(/^(https?://)flexhulp.be/, "$1www.flexhulp.be");
+export const CANONICAL_URL = SITE_URL.replace(
+  /^(https?:\/\/)flexhulp\.be/,
+  "$1www.flexhulp.be"
+);
