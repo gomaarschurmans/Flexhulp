@@ -13,3 +13,4 @@ test-*.mjs
 
 # tijdelijke testscripts
 .scratch-*
+*.tsbuildinfo
