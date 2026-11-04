@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -205,6 +206,7 @@ export async function payTask(id: string) {
     checkoutUrl = await getOrCreateTaskPayment(task);
   } catch (e) {
     console.error("Mollie-betaling aanmaken mislukt", e);
+    Sentry.captureException(e);
   }
 
   if (!checkoutUrl) {

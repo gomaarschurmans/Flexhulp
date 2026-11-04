@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
 import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
 import { SITE_URL } from "@/lib/mollie/client";
@@ -35,6 +36,7 @@ export async function finalizeCompletedTask(
     }
   } catch (e) {
     console.error("Betaalverzoek aanmaken/versturen mislukt", e);
+    Sentry.captureException(e);
   }
 
   return { invoice, checkoutUrl, emailed };
