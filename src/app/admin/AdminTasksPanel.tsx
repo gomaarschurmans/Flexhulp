@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Pagination, PAGE_SIZE } from "@/components/Pagination";
 import { formatRating } from "@/lib/utils";
-import { adminDeleteTask, markTaskDone, setStudentPaid } from "@/app/admin/actions";
+import { adminDeleteTask, markTaskDone, sendInvoiceForTask, setStudentPaid } from "@/app/admin/actions";
 import { formatEuro, formatHours, isExpiredOpen } from "@/lib/utils";
 import { formatInvoiceNumber } from "@/lib/invoicing/business";
 import type { InvoiceSummary, PaymentStatus, Task, TaskStatus } from "@/lib/types/domain";
@@ -232,6 +232,17 @@ export function AdminTasksPanel({
                           >
                             {formatInvoiceNumber(invoice.invoice_number)}
                           </Link>
+                        ) : t.status === "done" ? (
+                          <ConfirmAction
+                            action={sendInvoiceForTask.bind(null, t.id)}
+                            label="Factuur versturen"
+                            successMessage="Factuur aangemaakt en naar de klant gemaild."
+                            confirm={{
+                              title: "Factuur aanmaken en versturen?",
+                              text: `${t.client_name} ontvangt een factuur van ${formatEuro(t.hours * t.rate_at_creation)} per mail, met een betaallink als online betalen actief is.`,
+                              confirmLabel: "Ja, versturen",
+                            }}
+                          />
                         ) : null;
                       })()}
                       <ConfirmAction

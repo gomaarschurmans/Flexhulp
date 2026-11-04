@@ -71,6 +71,7 @@ export default async function KlantPage({
           initialTasks={tasks ?? []}
           initialApplications={applications ?? []}
           invoices={invoices ?? []}
+          onlinePayments={Boolean(process.env.MOLLIE_API_KEY)}
         />
       </div>
     </div>

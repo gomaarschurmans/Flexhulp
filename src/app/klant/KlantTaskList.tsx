@@ -9,10 +9,12 @@ export function KlantTaskList({
   initialTasks,
   initialApplications,
   invoices,
+  onlinePayments,
 }: {
   initialTasks: Task[];
   initialApplications: TaskApplication[];
   invoices: InvoiceSummary[];
+  onlinePayments: boolean;
 }) {
   const tasks = useRealtimeTasks(initialTasks);
   const applications = useRealtimeApplications(initialApplications);
@@ -33,6 +35,7 @@ export function KlantTaskList({
               task={task}
               applications={applications.filter((a) => a.task_id === task.id)}
               invoice={invoices.find((i) => i.task_id === task.id) ?? null}
+              onlinePayments={onlinePayments}
             />
           ))}
         </div>

@@ -3,12 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOrCreateTaskPayment } from "@/lib/mollie/payment";
-import { SITE_URL } from "@/lib/mollie/client";
-import { createInvoiceForTask } from "@/lib/invoicing/createInvoice";
+import { finalizeCompletedTask } from "@/lib/invoicing/finalize";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
 import {
-  paymentRequestEmail,
   studentPaidEmail,
   photoApprovedEmail,
   photoRejectedEmail,
@@ -102,26 +99,39 @@ export async function markTaskDone(id: string) {
     .update({ status: "done", completed_at: new Date().toISOString() })
     .eq("id", id);
 
-  const invoice = await createInvoiceForTask(task);
-
-  try {
-    const checkoutUrl = await getOrCreateTaskPayment(task);
-    const invoiceUrl = invoice ? `${SITE_URL}/klant/facturen/${invoice.id}` : null;
-    if (checkoutUrl || invoiceUrl) {
-      const { subject, html } = paymentRequestEmail(task, checkoutUrl, invoice, invoiceUrl);
-      await getResend().emails.send({
-        from: FROM_EMAIL,
-        to: task.client_email,
-        subject,
-        html,
-      });
-    }
-  } catch (e) {
-    console.error("Betaalverzoek aanmaken/versturen mislukt", e);
-  }
+  await finalizeCompletedTask(task);
 
   revalidatePath("/admin");
   revalidatePath("/klant");
+}
+
+/**
+ * Maakt alsnog de factuur en het betaalverzoek voor een voltooide klus die er
+ * nog geen heeft (bv. een klus die voor deze functie al was afgerond).
+ */
+export async function sendInvoiceForTask(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Niet ingelogd." };
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role !== "admin") return { error: "Geen toegang." };
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", id)
+    .eq("status", "done")
+    .single<Task>();
+  if (!task) return { error: "Deze klus is niet voltooid of bestaat niet meer." };
+
+  const { invoice, emailed } = await finalizeCompletedTask(task);
+  if (!invoice) return { error: "De factuur kon niet aangemaakt worden. Probeer opnieuw." };
+
+  revalidatePath("/admin");
+  revalidatePath("/klant");
+  if (!emailed) return { error: "De factuur is aangemaakt, maar de mail naar de klant is niet verstuurd." };
 }
 
 export async function adminDeleteTask(id: string) {

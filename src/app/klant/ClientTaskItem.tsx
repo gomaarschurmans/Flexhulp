@@ -28,10 +28,12 @@ export function ClientTaskItem({
   task,
   applications,
   invoice,
+  onlinePayments,
 }: {
   task: Task;
   applications: TaskApplication[];
   invoice: InvoiceSummary | null;
+  onlinePayments: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const expired = isExpiredOpen(task);
@@ -302,12 +304,16 @@ export function ClientTaskItem({
             <span className="rounded-full bg-teal-soft px-2.5 py-1 text-xs font-semibold text-teal">
               Betaald
             </span>
-          ) : (
+          ) : onlinePayments ? (
             <form action={payTask.bind(null, task.id)}>
               <button type="submit" className="btn btn-navy text-xs px-3.5 py-2">
                 Betaal nu ({formatEuro(task.hours * task.rate_at_creation)})
               </button>
             </form>
+          ) : (
+            <span className="text-sm text-ink-soft">
+              Te betalen: {formatEuro(task.hours * task.rate_at_creation)}
+            </span>
           )}
           {invoice && (
             <Link

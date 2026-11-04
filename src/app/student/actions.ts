@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStudentStats } from "@/lib/studentStats";
 import { getResend, FROM_EMAIL } from "@/lib/resend/client";
-import { newApplicationClientEmail, taskCompletedEmail } from "@/lib/resend/templates";
+import { newApplicationClientEmail } from "@/lib/resend/templates";
+import { finalizeCompletedTask } from "@/lib/invoicing/finalize";
 import { sendSms } from "@/lib/sms";
 import { formatEuro, hasStarted, tasksOverlap } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
@@ -158,21 +159,13 @@ export async function completeTask(id: string) {
     return { error: "Markeren als voltooid is niet gelukt. Probeer opnieuw." };
   }
 
-  try {
-    const { subject, html } = taskCompletedEmail(task);
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: task.client_email,
-      subject,
-      html,
-    });
-  } catch (e) {
-    console.error("Voltooiingsmail versturen mislukt", e);
-  }
+  // Factuur aanmaken en de klant een betaalverzoek (met Mollie-link) mailen.
+  await finalizeCompletedTask(task);
   await sendSms(
     task.client_phone,
-    `Flexhulp: '${task.title}' is voltooid. Uitbetaling: ${formatEuro(task.hours * task.rate_at_creation)}.`
+    `Flexhulp: '${task.title}' is voltooid. Je ontvangt de factuur (${formatEuro(task.hours * task.rate_at_creation)}) per mail.`
   );
+  revalidatePath("/klant");
 }
 
 export type StudentReviewState = { error: string | null; saved?: boolean };
