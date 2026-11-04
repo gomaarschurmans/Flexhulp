@@ -10,3 +10,6 @@ npm-debug.log*
 dev.log
 test-*.mjs
 .claude/
+
+# tijdelijke testscripts
+.scratch-*

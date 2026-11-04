@@ -1,4 +1,4 @@
-import { getMollie, SITE_URL } from "@/lib/mollie/client";
+import { getMollie, CANONICAL_URL } from "@/lib/mollie/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatTimeRange } from "@/lib/utils";
 import type { Task } from "@/lib/types/domain";
@@ -33,8 +33,8 @@ export async function getOrCreateTaskPayment(task: Task): Promise<string | null>
   const payment = await mollie.payments.create({
     amount: { currency: "EUR", value: amount },
     description: `Flexhulp – ${task.category} op ${formatTimeRange(task.date, task.time, task.end_time)}`,
-    redirectUrl: `${SITE_URL}/klant`,
-    webhookUrl: `${SITE_URL}/api/mollie/webhook`,
+    redirectUrl: `${CANONICAL_URL}/klant`,
+    webhookUrl: `${CANONICAL_URL}/api/mollie/webhook`,
     metadata: { taskId: task.id },
   });
 

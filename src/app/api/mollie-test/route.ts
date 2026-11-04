@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getMollie, SITE_URL } from "@/lib/mollie/client";
+import { getMollie, SITE_URL, CANONICAL_URL } from "@/lib/mollie/client";
 
 // TIJDELIJK: toont waarom een Mollie-betaling niet aangemaakt kan worden.
 export async function GET(request: NextRequest) {
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     sleutelLengte: key.length,
     heeftSpaties: /\s/.test(key),
     siteUrl: SITE_URL,
+    mollieAdres: CANONICAL_URL,
   };
   const mollie = getMollie();
   if (!mollie) return NextResponse.json(out);
@@ -37,8 +38,8 @@ export async function GET(request: NextRequest) {
     const p = await mollie.payments.create({
       amount: { currency: "EUR", value: "1.00" },
       description: "Flexhulp diagnose",
-      redirectUrl: `${SITE_URL}/klant`,
-      webhookUrl: `${SITE_URL}/api/mollie/webhook`,
+      redirectUrl: `${CANONICAL_URL}/klant`,
+      webhookUrl: `${CANONICAL_URL}/api/mollie/webhook`,
     });
     out.betalingAangemaakt = { id: p.id, status: p.status };
   } catch (e) {
